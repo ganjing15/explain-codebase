@@ -2,7 +2,7 @@
 
 A skill that generates a **beautiful, interactive HTML architecture doc** for any codebase — with plain-English explanations, analogies, verified technical details, and a linked sidebar table of contents.
 
-👉 **[See live example →](https://ganjing15.github.io/explain-codebase/examples/nanoclaw-architecture.html)**
+👉 **[See live example →](https://ganjing15.github.io/explain-codebase/nanoclaw-architecture.html)**
 
 ---
 
@@ -99,14 +99,6 @@ Every file name, function name, and constant in the output **must be verified wi
 |------|---------|
 | `SKILL.md` | The skill prompt — works with Claude Code and any AI coding tool |
 | `install.js` | NanoClaw installer — copies skill into the project |
-| `examples/nanoclaw-architecture.html` | Live example — NanoClaw architecture doc |
-
----
-
-## Examples
-
-- **[NanoClaw](examples/nanoclaw-architecture.html)** (Node.js AI messaging bot) — message flow, Docker isolation, credential proxy, per-group queues, file-based IPC
-- **Uttered** (Next.js language-learning app) — transcript pipeline, AI model stack, WebSocket proxy, usage limits, Cloudflare R2 storage
 
 ---
 
