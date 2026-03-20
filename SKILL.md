@@ -102,7 +102,13 @@ For each stage, note:
 
 ### Phase 3 — Identify architecture patterns
 
-Compare what you found to this pattern library. For each pattern present, use the provided plain-English explanation and analogy as a starting point (adapt to the specific project).
+Identify every significant pattern in the codebase — **not just the ones listed below**. The list is a reference library with ready-made analogies for common patterns; use it as a starting point. If you find patterns not in the list (actor model, CQRS, event sourcing, GraphQL layer, state machine, rate limiter, circuit breaker, pub/sub, API gateway, worker pool, etc.), write your own analogy and explanation following the same format.
+
+For each pattern you find — whether from the list or not — include:
+- A plain-English name (not the technical term if it confuses non-coders)
+- An everyday analogy that makes someone nod before reading any technical detail
+- What signs pointed to this pattern in the codebase
+- Key files/functions involved (verified)
 
 #### Pattern: Webhook receiver
 - **What it is**: A URL that external services call to deliver events

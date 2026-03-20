@@ -6,55 +6,71 @@ A skill that generates a **beautiful, interactive HTML architecture doc** for an
 
 ---
 
-## What it produces
+## Install
 
-A single self-contained HTML file with:
+### Claude Code — project (one project only)
 
-- **How It Works** — step-by-step flow of how data/requests move through the system, with emoji cards, plain-English descriptions, and verified file/function references
-- **Key Concepts** — collapsible explainers for architecture patterns (webhooks, queues, containers, etc.), each opening with an everyday analogy before any technical detail
-- **Key Files & Directories** — a reference grid of the most important files with descriptions
-- **Sidebar TOC** — sticky left nav that highlights your position as you scroll, all headings clickable
+```bash
+mkdir -p .claude/commands && curl -sL https://raw.githubusercontent.com/ganjing15/explain-codebase/main/SKILL.md -o .claude/commands/explain-codebase.md
+```
 
-Designed to be understood by both **non-technical stakeholders** and **developers** — plain English on top, technical detail underneath.
+### Claude Code — global (all projects)
+
+```bash
+mkdir -p ~/.claude/commands && curl -sL https://raw.githubusercontent.com/ganjing15/explain-codebase/main/SKILL.md -o ~/.claude/commands/explain-codebase.md
+```
+
+Then in any Claude Code session:
+
+```
+/explain-codebase
+```
 
 ---
 
 ## Usage
 
-### With Claude Code
-
-In any Claude Code session, simply ask:
+### Claude Code (after install)
 
 ```
-Read SKILL.md from https://raw.githubusercontent.com/ganjing15/explain-codebase/main/SKILL.md
-and follow it to generate an architecture doc for this codebase.
+/explain-codebase
+/explain-codebase /path/to/project
 ```
 
-Or paste `SKILL.md` directly into your session and say:
+### Claude Code (without installing)
+
+Paste this into your session:
 
 ```
-Follow the explain-codebase skill to generate an architecture doc for /path/to/project
+Fetch https://raw.githubusercontent.com/ganjing15/explain-codebase/main/SKILL.md
+and follow the instructions to generate an architecture doc for this codebase.
 ```
 
-### With any AI coding tool
+### Any other AI coding tool
 
-Any AI tool that can read files and run bash commands (Cursor, Windsurf, Aider, etc.) can use this skill. Paste the contents of `SKILL.md` into the system prompt or as a user message, then point it at a codebase.
+Any tool that can read files and run bash commands (Cursor, Windsurf, Aider, etc.) — paste `SKILL.md` into the system prompt or as a user message, then point it at a codebase.
 
-### With NanoClaw
-
-Install the skill into your NanoClaw project:
+### NanoClaw
 
 ```bash
 # From the NanoClaw project root on your host machine
 node groups/main/explain-codebase-skill/install.js
 ```
 
-Then trigger it in chat:
+Then use `/explain-codebase` in chat.
 
-```
-/explain-codebase
-/explain-codebase /workspace/extra/myapp
-```
+---
+
+## What it produces
+
+A single self-contained HTML file with:
+
+- **How It Works** — step-by-step flow of how data/requests move through the system, with emoji cards, plain-English descriptions, and verified file/function references
+- **Key Concepts** — collapsible explainers for architecture patterns, each opening with an everyday analogy before any technical detail
+- **Key Files & Directories** — a reference grid of the most important files with descriptions
+- **Sidebar TOC** — sticky left nav that highlights your position as you scroll, all headings clickable
+
+Designed to be understood by both **non-technical stakeholders** and **developers** — plain English on top, technical detail underneath.
 
 ---
 
@@ -64,13 +80,13 @@ The skill walks the AI through 5 phases:
 
 1. **Explore** — map the directory structure, read the entry point, identify major modules
 2. **Trace** — follow a piece of data from input to output through the system
-3. **Patterns** — match what's found against a library of 10 common architecture patterns (webhook receiver, message queue, container sandbox, credential proxy, file-based IPC, task scheduler, channel abstraction, router/dispatcher, AI worker, plugin system)
-4. **Generate** — produce the HTML doc using a fixed template with strict writing style rules
+3. **Patterns** — identify all architecture patterns found (not limited to a fixed list — webhook receiver, message queue, container sandbox, CQRS, actor model, event sourcing, pub/sub, rate limiter, and more)
+4. **Generate** — produce the HTML using a fixed template with strict writing style rules
 5. **Summary** — send a brief text summary of what was found
 
 ### Writing style rules
 
-The skill enforces a strict two-layer separation:
+Strict two-layer separation:
 
 | Layer | Where | Voice | Example |
 |-------|-------|-------|---------|
@@ -79,14 +95,14 @@ The skill enforces a strict two-layer separation:
 
 ### Hallucination prevention
 
-Every file name, function name, and constant in the output **must be verified with grep before inclusion**. The skill includes an explicit accuracy checklist the AI runs before finalising the doc.
+Every file name, function name, and constant **must be verified with grep before inclusion**. The skill includes an explicit accuracy checklist the AI runs before finalising.
 
 ---
 
 ## Design
 
-- Light gray background (`#f1f5f9`), glassmorphic cards with backdrop blur
-- Single blue accent (`#2563eb`) — no rainbow colors
+- Light gray background, glassmorphic cards with backdrop blur
+- Single blue accent — no rainbow colors
 - Two heading levels: top-level (no bar) and step sub-headings (blue left bar)
 - Responsive: sidebar hidden on mobile
 - Zero dependencies — pure HTML/CSS/JS, open in any browser
@@ -98,7 +114,7 @@ Every file name, function name, and constant in the output **must be verified wi
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | The skill prompt — works with Claude Code and any AI coding tool |
-| `install.js` | NanoClaw installer — copies skill into the project |
+| `install.js` | NanoClaw installer |
 
 ---
 
