@@ -1,14 +1,16 @@
 # explain-codebase
 
-A prompt-based skill that generates a **beautiful, interactive HTML architecture doc** for any codebase — with plain-English explanations, analogies, verified technical details, and a linked sidebar table of contents.
+A skill that generates a **beautiful, interactive HTML architecture doc** for any codebase — with plain-English explanations, analogies, verified technical details, and a linked sidebar table of contents.
 
-![HTML output with glassmorphic cards, sidebar TOC, collapsible concept explainers](https://opengraph.githubassets.com/1/ganjing15/explain-codebase)
+👉 **[See live example →](https://ganjing15.github.io/explain-codebase/examples/nanoclaw-architecture.html)**
+
+---
 
 ## What it produces
 
 A single self-contained HTML file with:
 
-- **"How It Works"** — step-by-step flow of how data/requests move through the system, with emoji cards, plain-English descriptions, and verified file/function references
+- **How It Works** — step-by-step flow of how data/requests move through the system, with emoji cards, plain-English descriptions, and verified file/function references
 - **Key Concepts** — collapsible explainers for architecture patterns (webhooks, queues, containers, etc.), each opening with an everyday analogy before any technical detail
 - **Key Files & Directories** — a reference grid of the most important files with descriptions
 - **Sidebar TOC** — sticky left nav that highlights your position as you scroll, all headings clickable
@@ -19,6 +21,25 @@ Designed to be understood by both **non-technical stakeholders** and **developer
 
 ## Usage
 
+### With Claude Code
+
+In any Claude Code session, simply ask:
+
+```
+Read SKILL.md from https://raw.githubusercontent.com/ganjing15/explain-codebase/main/SKILL.md
+and follow it to generate an architecture doc for this codebase.
+```
+
+Or paste `SKILL.md` directly into your session and say:
+
+```
+Follow the explain-codebase skill to generate an architecture doc for /path/to/project
+```
+
+### With any AI coding tool
+
+Any AI tool that can read files and run bash commands (Cursor, Windsurf, Aider, etc.) can use this skill. Paste the contents of `SKILL.md` into the system prompt or as a user message, then point it at a codebase.
+
 ### With NanoClaw
 
 Install the skill into your NanoClaw project:
@@ -28,22 +49,12 @@ Install the skill into your NanoClaw project:
 node groups/main/explain-codebase-skill/install.js
 ```
 
-Then trigger it in your chat:
+Then trigger it in chat:
 
 ```
 /explain-codebase
 /explain-codebase /workspace/extra/myapp
 ```
-
-### With any AI assistant
-
-Paste the contents of `SKILL.md` into your system prompt (or as a user message), then ask:
-
-```
-Follow the explain-codebase skill instructions to generate an architecture doc for this codebase: [path or repo]
-```
-
-Works with Claude, ChatGPT, Gemini, or any model that can read files and run bash commands.
 
 ---
 
@@ -68,7 +79,7 @@ The skill enforces a strict two-layer separation:
 
 ### Hallucination prevention
 
-Every file name, function name, and constant in the output **must be verified with grep before inclusion**. The skill includes an explicit accuracy checklist that the AI runs before finalising the doc.
+Every file name, function name, and constant in the output **must be verified with grep before inclusion**. The skill includes an explicit accuracy checklist the AI runs before finalising the doc.
 
 ---
 
@@ -86,14 +97,15 @@ Every file name, function name, and constant in the output **must be verified wi
 
 | File | Purpose |
 |------|---------|
-| `SKILL.md` | The skill prompt — paste into any AI assistant |
+| `SKILL.md` | The skill prompt — works with Claude Code and any AI coding tool |
 | `install.js` | NanoClaw installer — copies skill into the project |
+| `examples/nanoclaw-architecture.html` | Live example — NanoClaw architecture doc |
 
 ---
 
 ## Examples
 
-- **NanoClaw** (Node.js messaging bot) — message flow, Docker isolation, credential proxy, per-group queues, file-based IPC
+- **[NanoClaw](examples/nanoclaw-architecture.html)** (Node.js AI messaging bot) — message flow, Docker isolation, credential proxy, per-group queues, file-based IPC
 - **Uttered** (Next.js language-learning app) — transcript pipeline, AI model stack, WebSocket proxy, usage limits, Cloudflare R2 storage
 
 ---

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanoClaw Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #1e293b; min-height: 100vh;
+    background: #f1f5f9;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    background: transparent;
+    border-right: 1px solid rgba(147,197,253,0.25);
+    padding: 48px 0 40px;
+  }
+  .sidebar-brand { padding: 0 20px 24px; border-bottom: 1px solid rgba(147,197,253,0.25); margin-bottom: 16px; }
+  .sidebar-brand .logo { font-size: 1.1rem; font-weight: 800; color: #2563eb; text-decoration: none; display: block; }
+  .sidebar-brand .logo:hover { opacity: 0.8; }
+  .sidebar-brand .tagline { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+  .toc-group { margin-bottom: 6px; }
+  .toc-group-label { display: block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; padding: 8px 20px 4px; text-decoration: none; transition: color 0.15s; }
+  a.toc-group-label:hover { color: #2563eb; }
+  .toc-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; font-size: 0.82rem; color: #64748b; cursor: pointer; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s, color 0.15s, border-color 0.15s; line-height: 1.3; }
+  .toc-item:hover { background: rgba(239,246,255,0.7); color: #1e293b; }
+  .toc-item.active { background: rgba(219,234,254,0.6); color: #2563eb; border-left-color: #2563eb; font-weight: 600; }
+  .toc-item .toc-num { width: 20px; height: 20px; border-radius: 50%; background: rgba(241,245,249,0.8); color: #64748b; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .toc-item.active .toc-num { background: #2563eb; color: #fff; }
+  .toc-item .toc-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; padding: 48px 40px 80px 40px; }
+  h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+  .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 48px; }
+  .section-label { font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 14px; scroll-margin-top: 24px; border-left: 3px solid #2563eb; padding-left: 10px; }
+  .section-h1 { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 18px; margin-top: 48px; scroll-margin-top: 24px; padding-left: 0; border-left: none; }
+
+  /* Flow cards — glassmorphic */
+  .flow { display: flex; align-items: stretch; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+  .flow-step { flex: 1; min-width: 155px; }
+  .step-card {
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-top: 2px solid rgba(147,197,253,0.4);
+    border-radius: 14px; padding: 16px 14px; height: 100%;
+    box-shadow: 0 2px 16px rgba(37,99,235,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.18s, transform 0.18s, border-top-color 0.18s, background 0.18s;
+  }
+  .step-card:hover {
+    background: rgba(255,255,255,0.85);
+    border-top-color: #2563eb;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(37,99,235,0.13), 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .step-card.blue, .step-card.yellow, .step-card.green,
+  .step-card.purple, .step-card.orange, .step-card.teal, .step-card.rose { border-top: 2px solid rgba(147,197,253,0.4); }
+  .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-emoji { font-size: 1.5rem; flex-shrink: 0; }
+  .step-plain { display: none; }
+  .step-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; margin-bottom: 0; line-height: 1.3; }
+  .step-title a { color: inherit; text-decoration: none; border-bottom: 1.5px dashed #93c5fd; }
+  .step-title a:hover { color: #2563eb; border-bottom-color: #2563eb; }
+  .step-tech  { font-size: 0.68rem; font-family: 'SF Mono','Fira Code',monospace; color: #94a3b8; margin-bottom: 7px; word-break: break-word; overflow-wrap: break-word; }
+  .step-desc  { font-size: 0.78rem; color: #475569; line-height: 1.55; }
+  .step-tag   {
+    display: inline-block; font-size: 0.63rem; font-family: monospace;
+    background: rgba(219,234,254,0.5); color: #1d4ed8;
+    border: 1px solid rgba(147,197,253,0.5);
+    border-radius: 4px; padding: 1px 5px; margin-top: 5px; margin-right: 3px;
+    word-break: break-all; white-space: normal; max-width: 100%;
+  }
+  .step-tag.g, .step-tag.y, .step-tag.p, .step-tag.r {
+    background: rgba(219,234,254,0.5); color: #1d4ed8; border-color: rgba(147,197,253,0.5);
+  }
+
+  /* Container box */
+  .container-section {
+    background: rgba(239,246,255,0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1.5px dashed rgba(147,197,253,0.6);
+    border-radius: 16px; padding: 28px 20px 20px; margin-bottom: 32px; position: relative;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .container-badge {
+    position: absolute; top: -13px; left: 20px;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(147,197,253,0.6);
+    border-radius: 20px; padding: 3px 14px;
+    font-size: 0.72rem; font-weight: 700; color: #2563eb; letter-spacing: 0.04em;
+  }
+  .container-inner { display: flex; gap: 12px; flex-wrap: wrap; }
+  .container-inner .step-card { flex: 1; min-width: 145px; }
+
+  /* Concepts */
+  .concept {
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 16px rgba(37,99,235,0.05);
+    border-radius: 14px; padding: 0; margin-bottom: 14px; overflow: hidden;
+  }
+  .concept-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .concept-header:hover { background: rgba(239,246,255,0.6); }
+  .concept-icon { font-size: 1.4rem; flex-shrink: 0; }
+  .concept-label { display: none; }
+  .concept-title { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
+  .concept-toggle { margin-left: auto; color: #94a3b8; font-size: 1rem; transition: transform 0.2s; flex-shrink: 0; }
+  .concept-body { font-size: 0.82rem; color: #475569; line-height: 1.7; padding: 0 20px 20px; border-top: 1px solid rgba(226,232,240,0.6); }
+  .concept-body p { margin-bottom: 10px; margin-top: 12px; }
+  .concept-body strong { color: #1e293b; }
+  .concept-body code { font-family: monospace; color: #2563eb; background: rgba(219,234,254,0.4); padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
+  .concept-body ul { padding-left: 18px; margin-bottom: 10px; }
+  .concept-body li { margin-bottom: 5px; }
+  .concept-body .analogy { background: rgba(239,246,255,0.7); border-left: 3px solid #93c5fd; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; font-style: italic; color: #1d4ed8; }
+  .concept-body .tech-box { background: rgba(248,250,252,0.8); border: 1px solid rgba(226,232,240,0.7); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-family: monospace; font-size: 0.76rem; color: #475569; overflow-x: auto; word-break: break-all; white-space: pre-wrap; }
+
+  /* Reference grid */
+  .ref-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 40px; }
+  .ref-card {
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 12px rgba(37,99,235,0.05);
+    border-radius: 12px; padding: 16px 14px;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .ref-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(37,99,235,0.1); }
+  .ref-title { font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .ref-file  { font-size: 0.7rem; font-family: monospace; color: #2563eb; margin-bottom: 8px; word-break: break-all; }
+  .ref-desc  { font-size: 0.78rem; color: #64748b; line-height: 1.5; }
+
+  hr { border: none; border-top: 1px solid rgba(226,232,240,0.5); margin: 40px 0; }
+  .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
+  .collapsible-body.collapsed { max-height: 0; }
+  .collapsible-body.expanded  { max-height: 3000px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 24px 16px 60px; }
+    .ref-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <a class="logo" href="#">NanoClaw</a>
+      <div class="tagline">Architecture Overview</div>
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#flow-section">How It Works</a>
+      <a class="toc-item" href="#step1">
+        <span class="toc-num">1</span>
+        <span>Message arrives</span>
+      </a>
+      <a class="toc-item" href="#step2">
+        <span class="toc-num">2</span>
+        <span>Who's allowed in?</span>
+      </a>
+      <a class="toc-item" href="#step3">
+        <span class="toc-num">3</span>
+        <span>Line up &amp; wait</span>
+      </a>
+      <a class="toc-item" href="#step4">
+        <span class="toc-num">4</span>
+        <span>AI thinks it over</span>
+      </a>
+      <a class="toc-item" href="#step5">
+        <span class="toc-num">5</span>
+        <span>Reply goes back</span>
+      </a>
+      <a class="toc-item" href="#step6">
+        <span class="toc-num">6</span>
+        <span>Scheduled tasks</span>
+      </a>
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#concepts-section">Key Concepts</a>
+      <a class="toc-item" href="#concept-webhook">
+        <span class="toc-icon">🔔</span>
+        <span>Webhook</span>
+      </a>
+      <a class="toc-item" href="#concept-docker">
+        <span class="toc-icon">🐳</span>
+        <span>Docker Containers</span>
+      </a>
+      <a class="toc-item" href="#concept-credential-proxy">
+        <span class="toc-icon">🔑</span>
+        <span>Credential Proxy</span>
+      </a>
+      <a class="toc-item" href="#concept-queue">
+        <span class="toc-icon">🗂️</span>
+        <span>Message Queue</span>
+      </a>
+      <a class="toc-item" href="#concept-ipc">
+        <span class="toc-icon">📬</span>
+        <span>File-Based IPC</span>
+      </a>
+      <a class="toc-item" href="#concept-channel">
+        <span class="toc-icon">🌐</span>
+        <span>Channel Abstraction</span>
+      </a>
+      <a class="toc-item" href="#concept-skills">
+        <span class="toc-icon">🧩</span>
+        <span>Skills</span>
+      </a>
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#reference">Key Files &amp; Directories</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <h1>NanoClaw Architecture</h1>
+    <p class="subtitle">How a message travels from your chat app to an AI response — and back.</p>
+
+    <div class="section-h1" id="flow-section">How It Works</div>
+
+    <!-- Step 1 -->
+    <div class="section-label" id="step1">Step 1 — Message arrives</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-card blue">
+          <div class="step-header">
+            <span class="step-emoji">🔔</span>
+            <div class="step-title"><a href="#concept-webhook">New message</a></div>
+          </div>
+          <div class="step-tech">src/channels/lark.ts</div>
+          <div class="step-desc">A chat platform pings NanoClaw the instant someone sends a message — like a doorbell ringing the moment a visitor arrives. NanoClaw doesn't have to keep checking; it just waits and reacts.</div>
+          <div>
+            <span class="step-tag">webhook</span>
+            <span class="step-tag">POST /webhook</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-card blue">
+          <div class="step-header">
+            <span class="step-emoji">🌐</span>
+            <div class="step-title"><a href="#concept-channel">Works with any platform</a></div>
+          </div>
+          <div class="step-tech">src/channels/registry.ts → registerChannel()</div>
+          <div class="step-desc">NanoClaw speaks every platform's language through adapters — like a universal translator. You can switch platforms without changing anything else about how NanoClaw works.</div>
+          <div>
+            <span class="step-tag">lark</span>
+            <span class="step-tag">telegram</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="section-label" id="step2">Step 2 — Who's allowed in?</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-card yellow">
+          <div class="step-header">
+            <span class="step-emoji">🚦</span>
+            <div class="step-title">Trigger check</div>
+          </div>
+          <div class="step-tech">src/index.ts (trigger check)</div>
+          <div class="step-desc">Only messages that start with the right password get processed — everything else is quietly ignored. Like a bouncer at the door who only lets in people who say the right phrase.</div>
+          <div>
+            <span class="step-tag y">@Nano</span>
+            <span class="step-tag y">requiresTrigger</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-card yellow">
+          <div class="step-header">
+            <span class="step-emoji">🪪</span>
+            <div class="step-title">Sender check</div>
+          </div>
+          <div class="step-tech">src/sender-allowlist.ts → isSenderAllowed()</div>
+          <div class="step-desc">Checks whether the person who sent the message is on the approved list. Admins can restrict Nano to only respond to certain people, or block messages from unknown senders entirely.</div>
+          <div>
+            <span class="step-tag y">allowlist</span>
+            <span class="step-tag y">drop mode</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="section-label" id="step3">Step 3 — Line up &amp; wait your turn</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-card purple">
+          <div class="step-header">
+            <span class="step-emoji">🗂️</span>
+            <div class="step-title"><a href="#concept-queue">Queue</a></div>
+          </div>
+          <div class="step-tech">src/group-queue.ts → enqueueMessageCheck()</div>
+          <div class="step-desc">Each group chat gets its own waiting line — messages are handled one at a time so conversations never get jumbled together. Two different groups can be handled at the same time, but within a group, it's always orderly.</div>
+          <div>
+            <span class="step-tag p">GroupQueue</span>
+            <span class="step-tag p">per-group</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-card purple">
+          <div class="step-header">
+            <span class="step-emoji">💾</span>
+            <div class="step-title">Saved for context</div>
+          </div>
+          <div class="step-tech">src/db.ts → storeMessage()</div>
+          <div class="step-desc">Every message is stored so Nano can remember the full conversation history. This is how it knows what was said earlier and can give answers that make sense in context.</div>
+          <div>
+            <span class="step-tag p">SQLite</span>
+            <span class="step-tag p">messages table</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="section-label" id="step4">Step 4 — AI thinks it over</div>
+    <div class="container-section">
+      <div class="container-badge">🔒 Isolated Docker Container</div>
+      <div class="container-inner">
+        <div class="step-card green">
+          <div class="step-header">
+            <span class="step-emoji">📦</span>
+            <div class="step-title"><a href="#concept-docker">Fresh workspace</a></div>
+          </div>
+          <div class="step-tech">src/container-runner.ts → runContainerAgent()</div>
+          <div class="step-desc">For each reply, NanoClaw spins up a clean, throwaway environment — like giving the AI a fresh notebook every time, completely sealed off from everything else. When it's done, the notebook is shredded.</div>
+          <div>
+            <span class="step-tag g">docker run --rm</span>
+            <span class="step-tag g">--network=host</span>
+          </div>
+        </div>
+        <div class="step-card green">
+          <div class="step-header">
+            <span class="step-emoji">🔑</span>
+            <div class="step-title"><a href="#concept-credential-proxy">Secret keeper</a></div>
+          </div>
+          <div class="step-tech">src/credential-proxy.ts</div>
+          <div class="step-desc">The AI only ever sees fake placeholder keys. A local middleman quietly swaps them for the real ones — so your actual secrets never leave your machine, even if the AI misbehaves.</div>
+          <div>
+            <span class="step-tag g">host.docker.internal:3001</span>
+            <span class="step-tag g">ANTHROPIC_BASE_URL</span>
+          </div>
+        </div>
+        <div class="step-card green">
+          <div class="step-header">
+            <span class="step-emoji">🧠</span>
+            <div class="step-title">Claude reasons &amp; acts</div>
+          </div>
+          <div class="step-tech">src/index.ts → runAgent()</div>
+          <div class="step-desc">Claude reads the full conversation, decides which tools to use — web search, running commands, reading files — and works through the problem step by step, like a smart assistant with a full toolbox.</div>
+          <div>
+            <span class="step-tag g">claude (latest)</span>
+            <span class="step-tag g">tools</span>
+          </div>
+        </div>
+        <div class="step-card green">
+          <div class="step-header">
+            <span class="step-emoji">🔧</span>
+            <div class="step-title"><a href="#concept-skills">Skills loaded</a></div>
+          </div>
+          <div class="step-tech">container/skills/ + groups/{name}/CLAUDE.md</div>
+          <div class="step-desc">Before thinking, Nano loads its instructions and any installed skills — like reading a briefing packet before a meeting. Each group can have its own custom set of instructions and capabilities.</div>
+          <div>
+            <span class="step-tag g">SKILL.md</span>
+            <span class="step-tag g">system prompt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="section-label" id="step5">Step 5 — Reply goes back</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-card teal">
+          <div class="step-header">
+            <span class="step-emoji">📤</span>
+            <div class="step-title">Response sent</div>
+          </div>
+          <div class="step-tech">src/index.ts → channel.sendFiles()</div>
+          <div class="step-desc">The AI's reply — whether it's text, images, or files — is handed back to the same platform the message came from. You get the answer right where you asked.</div>
+          <div>
+            <span class="step-tag">.send_files.json</span>
+            <span class="step-tag">sendMessage()</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-card teal">
+          <div class="step-header">
+            <span class="step-emoji">📎</span>
+            <div class="step-title">Files &amp; images</div>
+          </div>
+          <div class="step-tech">src/channels/lark.ts → sendFiles()</div>
+          <div class="step-desc">If the AI created an image or a file during its work, it uploads them to the platform and sends them as proper attachments — not just a wall of text with no download link.</div>
+          <div>
+            <span class="step-tag">image_key</span>
+            <span class="step-tag">file upload</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="section-label" id="step6">Step 6 — Scheduled tasks</div>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-card orange">
+          <div class="step-header">
+            <span class="step-emoji">⏰</span>
+            <div class="step-title">Runs on a schedule</div>
+          </div>
+          <div class="step-tech">src/task-scheduler.ts → getDueTasks()</div>
+          <div class="step-desc">Nano can run tasks automatically at set times — daily reminders, weekly reports, or anything you've scheduled in advance. Like a programmable alarm clock that triggers a full AI response when it goes off.</div>
+          <div>
+            <span class="step-tag y">cron</span>
+            <span class="step-tag y">scheduled_tasks</span>
+          </div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-card orange">
+          <div class="step-header">
+            <span class="step-emoji">📬</span>
+            <div class="step-title"><a href="#concept-ipc">Cross-group messages</a></div>
+          </div>
+          <div class="step-tech">src/ipc.ts (polls every 1s)</div>
+          <div class="step-desc">Groups and AI containers can send messages to each other by dropping small notes in a shared folder — like a mail slot between rooms. No direct connection needed; just write a note and walk away.</div>
+          <div>
+            <span class="step-tag y">ipc/messages/</span>
+            <span class="step-tag y">ipc/tasks/</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Concepts -->
+    <div class="section-h1" id="concepts-section">Key Concepts</div>
+
+    <!-- Webhook -->
+    <div class="concept" id="concept-webhook">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🔔</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Webhook</div>
+        </div>
+        <span class="concept-toggle">▾</span>
+      </div>
+      <div class="collapsible-body expanded">
+        <div class="concept-body">
+          <div class="analogy">Like a doorbell — instead of NanoClaw constantly knocking on Lark's door asking "any new messages?", Lark rings NanoClaw the moment something arrives.</div>
+          <p>Webhooks are how the outside world notifies NanoClaw. Chat platforms send an HTTP POST request to NanoClaw's URL whenever someone sends a message. No polling, no delay — instant push delivery.</p>
+          <ul>
+            <li><strong>Instant delivery</strong> — NanoClaw is notified the moment a message is sent, not on a timer</li>
+            <li><strong>Platform-agnostic</strong> — every platform (Lark, WhatsApp, Telegram) uses the same webhook concept</li>
+            <li><strong>Verification</strong> — platforms include a secret token so NanoClaw can confirm the sender is legit</li>
+          </ul>
+          <div class="tech-box">POST https://your-server.com/webhook/lark → lark.ts handleWebhook()</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Docker -->
+    <div class="concept" id="concept-docker">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🐳</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Docker (Isolated Containers)</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like a disposable lunchbox — packed fresh for every meal, used once, then thrown away. Nothing from one meal contaminates the next.</div>
+          <p>Every time NanoClaw needs the AI to work on a reply, it creates a fresh isolated environment — a "container". When it's done, the container disappears. This means one conversation can never accidentally affect another, and nothing the AI does can permanently change the host machine.</p>
+          <ul>
+            <li><strong>Isolated</strong> — each conversation runs in its own bubble; no shared state</li>
+            <li><strong>Throwaway</strong> — containers are deleted after use (<code>--rm</code> flag)</li>
+            <li><strong>Safe</strong> — even if the AI runs bad code, it's contained</li>
+          </ul>
+          <div class="tech-box">docker run --rm ... nanoclaw-agent:latest</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credential Proxy -->
+    <div class="concept" id="concept-credential-proxy">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🔑</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Credential Proxy</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like a hotel concierge — guests can request things that need the master key (unlocking a room, accessing storage), but they never touch the key themselves.</div>
+          <p>The AI container only has fake placeholder API keys. When it makes an API call, a small "proxy" running on the host intercepts it and swaps in the real keys before forwarding. This way, even if the AI were somehow compromised, your real credentials stay safe on the host — the container never sees them.</p>
+          <ul>
+            <li><strong>Zero exposure</strong> — containers hold fake keys like <code>sk-placeholder</code></li>
+            <li><strong>Transparent</strong> — the AI doesn't know the swap happens; it just works</li>
+            <li><strong>Host-only</strong> — real keys only ever live on your machine</li>
+          </ul>
+          <div class="tech-box">ANTHROPIC_BASE_URL=http://host.docker.internal:3001
+# containers can't use "localhost" — host.docker.internal
+# is Docker's special hostname that points back to your Mac
+# credential-proxy.ts listens on port 3001 and swaps in real keys</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="concept" id="concept-queue">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🗂️</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Per-Group Message Queue</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like a single checkout lane per customer at a store — a second customer can be helped at the next lane, but you never have two clerks bumping into each other serving the same person.</div>
+          <p>Each group chat has its own queue. Messages wait in line and are processed one at a time per group. This prevents chaos — if two people message at the same moment, their replies won't get mixed up. But two different groups are handled in parallel with no waiting.</p>
+          <ul>
+            <li><strong>Ordered</strong> — messages in a group are always handled in order</li>
+            <li><strong>Per-group</strong> — groups don't block each other</li>
+            <li><strong>Backpressure</strong> — if a response takes a while, new messages for that group wait nicely</li>
+          </ul>
+          <div class="tech-box">GroupQueue.enqueue(groupId, async () => runAgent(...))</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IPC -->
+    <div class="concept" id="concept-ipc">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">📬</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">File-Based IPC (Inter-Process Communication)</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like a mail slot in a door — one side drops a note through, the other side picks it up and acts on it. No direct connection needed.</div>
+          <p>The AI container and the host can't talk directly (they're isolated). Instead, they communicate by writing small JSON files to a shared folder. The host watches the folder and picks up any new files. This is how the AI can schedule tasks, send messages to other groups, or trigger actions on the host.</p>
+          <ul>
+            <li><strong>Simple &amp; reliable</strong> — just files; no sockets, no ports to manage</li>
+            <li><strong>Decoupled</strong> — sender and receiver don't need to be running at the same time</li>
+            <li><strong>Auditable</strong> — you can inspect the files to see what was requested</li>
+          </ul>
+          <div class="tech-box">// AI writes:
+{"type": "message", "chatJid": "...", "text": "Hello"}
+→ /workspace/ipc/messages/msg_123.json
+// Host picks it up via fs.watch()</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Channel Abstraction -->
+    <div class="concept" id="concept-channel">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🌐</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Channel Abstraction</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like a universal power adapter — your laptop works in any country because the adapter handles the different plug shapes. NanoClaw works on any chat platform for the same reason.</div>
+          <p>Every chat platform works differently — Lark has its own API, Telegram has another, WhatsApp yet another. NanoClaw defines a single common interface ("channel") and then writes a thin adapter for each platform. The core system only talks to the common interface and never cares which platform it's actually on.</p>
+          <ul>
+            <li><strong>Pluggable</strong> — add a new platform by writing one adapter file</li>
+            <li><strong>Consistent</strong> — the core always calls the same <code>send()</code>, <code>sendFiles()</code> methods</li>
+            <li><strong>Independent</strong> — Lark bugs don't affect Telegram; each adapter is self-contained</li>
+          </ul>
+          <div class="tech-box">// src/types.ts
+interface Channel {
+  sendMessage(jid: string, text: string): Promise&lt;void&gt;;
+  sendFiles?(jid, attachments, groupFolder): Promise&lt;void&gt;;  // optional
+  connect(): Promise&lt;void&gt;;
+  isConnected(): boolean;
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="concept" id="concept-skills">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">🧩</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">Skills (Plugin System)</div>
+        </div>
+        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+      </div>
+      <div class="collapsible-body collapsed">
+        <div class="concept-body">
+          <div class="analogy">Like an app store for your AI — install a skill and new superpowers appear. Uninstall it and they vanish, without touching anything else.</div>
+          <p>Skills are Markdown files that give Nano new capabilities. When a skill is installed, its instructions are injected into the AI's briefing before it starts thinking. The AI reads the skill and knows how to do new things — browse the web in a special way, generate documents, manage a specific workflow — without any code changes.</p>
+          <ul>
+            <li><strong>Zero-code</strong> — skills are plain Markdown files, not code</li>
+            <li><strong>Per-group</strong> — different groups can have different skills installed</li>
+            <li><strong>Composable</strong> — install multiple skills; they stack</li>
+          </ul>
+          <div class="tech-box">container/skills/explain-codebase/SKILL.md  →  injected into system prompt
+groups/main/CLAUDE.md  →  group-specific instructions</div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Reference -->
+    <div class="section-h1" id="reference">Key Files &amp; Directories</div>
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-title">🚀 Entry Point</div>
+        <div class="ref-file">src/index.ts</div>
+        <div class="ref-desc">Starts everything: registers channel adapters, wires up the scheduler, and listens for incoming webhooks.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🔔 Channel Adapters</div>
+        <div class="ref-file">src/channels/lark.ts, telegram.ts</div>
+        <div class="ref-desc">One file per platform — each knows how to receive messages and send replies for its platform.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🗂️ Message Queue</div>
+        <div class="ref-file">src/group-queue.ts</div>
+        <div class="ref-desc">Keeps per-group queues so messages are handled one at a time per conversation.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🤖 Container Runner</div>
+        <div class="ref-file">src/container-runner.ts</div>
+        <div class="ref-desc">Spawns Docker containers, injects credentials, runs Claude, collects replies via <code>runContainerAgent()</code>.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🔑 Credential Proxy</div>
+        <div class="ref-file">src/credential-proxy.ts</div>
+        <div class="ref-desc">HTTP proxy on port 3001 — containers reach it via <code>host.docker.internal:3001</code> and it swaps fake keys for real ones transparently.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">⏰ Scheduler</div>
+        <div class="ref-file">src/task-scheduler.ts</div>
+        <div class="ref-desc">Checks the database every 60s for due tasks and fires them as full agent runs.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🗄️ Database</div>
+        <div class="ref-file">src/store/ (SQLite)</div>
+        <div class="ref-desc">Stores messages, registered groups, scheduled tasks, and conversation history.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">📬 IPC Directory</div>
+        <div class="ref-file">/workspace/ipc/</div>
+        <div class="ref-desc">Shared folder between host and containers. <code style="font-size:0.72rem;color:#2563eb;background:#eff6ff;padding:1px 4px;border-radius:3px;">messages/</code> for outbound, <code style="font-size:0.72rem;color:#2563eb;background:#eff6ff;padding:1px 4px;border-radius:3px;">tasks/</code> for scheduling.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🧠 Group Memory</div>
+        <div class="ref-file">groups/{name}/CLAUDE.md</div>
+        <div class="ref-desc">Per-group instructions and memory. Each group gets a private persistent context.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🧩 Skills</div>
+        <div class="ref-file">container/skills/</div>
+        <div class="ref-desc">Installed skills. Each is a Markdown file synced into the agent container and injected into the system prompt.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.parentElement.querySelector('.collapsible-body');
+  const arrow = header.querySelector('.concept-toggle');
+  if (body.classList.contains('expanded')) {
+    body.classList.replace('expanded','collapsed');
+    arrow.style.transform = 'rotate(-90deg)';
+  } else {
+    body.classList.replace('collapsed','expanded');
+    arrow.style.transform = '';
+  }
+}
+function scrollToId(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const body = el.querySelector('.collapsible-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.replace('collapsed','expanded');
+    const arrow = el.querySelector('.concept-toggle');
+    if (arrow) arrow.style.transform = '';
+  }
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+const sectionIds = Array.from(document.querySelectorAll('[id]'))
+  .filter(el => el.classList.contains('section-label') || el.classList.contains('concept'))
+  .map(el => el.id).filter(Boolean);
+const tocLinks = document.querySelectorAll('.toc-item');
+function updateToc() {
+  let current = sectionIds[0];
+  for (const id of sectionIds) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= 60) current = id;
+  }
+  tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current));
+}
+window.addEventListener('scroll', updateToc, { passive: true });
+updateToc();
+document.querySelectorAll('.toc-item, a.toc-group-label, .sidebar-brand .logo').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if (!href || href === '#') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    e.preventDefault(); scrollToId(href.slice(1));
+  });
+});
+document.querySelectorAll('.step-title a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => { e.preventDefault(); scrollToId(a.getAttribute('href').slice(1)); });
+});
+</script>
+</body>
+</html>
