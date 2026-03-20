@@ -80,7 +80,7 @@ The skill walks the AI through 5 phases:
 
 1. **Explore** — map the directory structure, read the entry point, identify major modules
 2. **Trace** — follow a piece of data from input to output through the system
-3. **Patterns** — identify all architecture patterns found (not limited to a fixed list — webhook receiver, message queue, container sandbox, CQRS, actor model, event sourcing, pub/sub, rate limiter, and more)
+3. **Patterns** — identify every architecture pattern found, whether common (webhook, queue, container, pub/sub, CQRS, actor model…) or project-specific. The skill includes a reference library of patterns with ready-made analogies, but is not limited to it
 4. **Generate** — produce the HTML using a fixed template with strict writing style rules
 5. **Summary** — send a brief text summary of what was found
 
