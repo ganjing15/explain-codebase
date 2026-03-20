@@ -16,10 +16,20 @@ if (fs.existsSync(DEST)) {
 
 fs.mkdirSync(DEST, { recursive: true });
 
-for (const file of fs.readdirSync(SRC)) {
-  if (file === 'install.js') continue;
-  fs.copyFileSync(path.join(SRC, file), path.join(DEST, file));
-  console.log(`  ✅ Copied ${file}`);
+for (const entry of fs.readdirSync(SRC, { withFileTypes: true })) {
+  if (entry.name === 'install.js' || entry.name === '.git' || entry.name === 'nanoclaw-architecture.html') continue;
+  const srcPath = path.join(SRC, entry.name);
+  const destPath = path.join(DEST, entry.name);
+  if (entry.isDirectory()) {
+    fs.mkdirSync(destPath, { recursive: true });
+    for (const file of fs.readdirSync(srcPath)) {
+      fs.copyFileSync(path.join(srcPath, file), path.join(destPath, file));
+      console.log(`  ✅ Copied ${entry.name}/${file}`);
+    }
+  } else {
+    fs.copyFileSync(srcPath, destPath);
+    console.log(`  ✅ Copied ${entry.name}`);
+  }
 }
 
 console.log(`\n✅ explain-codebase skill installed at: container/skills/explain-codebase/`);

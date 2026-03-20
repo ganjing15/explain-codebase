@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{PROJECT_NAME} architecture documentation — interactive guide with data flow, patterns, and key concepts.">
+<title>{PROJECT_NAME} Architecture</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --text: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-faint: #94a3b8;
+    --heading: #0f172a;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --accent-light: rgba(147,197,253,0.25);
+    --accent-bg: rgba(219,234,254,0.5);
+    --accent-border: rgba(147,197,253,0.5);
+    --card-bg: rgba(255,255,255,0.65);
+    --card-border: rgba(255,255,255,0.9);
+    --card-hover: rgba(255,255,255,0.85);
+    --card-shadow: rgba(37,99,235,0.06);
+    --card-shadow-hover: rgba(37,99,235,0.13);
+    --container-bg: rgba(239,246,255,0.55);
+    --container-border: rgba(147,197,253,0.6);
+    --badge-bg: rgba(255,255,255,0.9);
+    --concept-hover: rgba(239,246,255,0.6);
+    --analogy-bg: rgba(239,246,255,0.7);
+    --analogy-border: #93c5fd;
+    --analogy-text: #1d4ed8;
+    --tech-bg: rgba(248,250,252,0.8);
+    --tech-border: rgba(226,232,240,0.7);
+    --tech-text: #475569;
+    --code-bg: rgba(219,234,254,0.4);
+    --divider: rgba(226,232,240,0.5);
+    --sidebar-hover: rgba(239,246,255,0.7);
+    --sidebar-active: rgba(219,234,254,0.6);
+    --toc-num-bg: rgba(241,245,249,0.8);
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f172a;
+    --text: #e2e8f0;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+    --heading: #f1f5f9;
+    --accent: #60a5fa;
+    --accent-dark: #93c5fd;
+    --accent-light: rgba(96,165,250,0.15);
+    --accent-bg: rgba(96,165,250,0.15);
+    --accent-border: rgba(96,165,250,0.3);
+    --card-bg: rgba(30,41,59,0.65);
+    --card-border: rgba(51,65,85,0.6);
+    --card-hover: rgba(30,41,59,0.85);
+    --card-shadow: rgba(0,0,0,0.2);
+    --card-shadow-hover: rgba(96,165,250,0.15);
+    --container-bg: rgba(30,41,59,0.55);
+    --container-border: rgba(96,165,250,0.3);
+    --badge-bg: rgba(30,41,59,0.9);
+    --concept-hover: rgba(30,41,59,0.8);
+    --analogy-bg: rgba(30,58,138,0.3);
+    --analogy-border: #3b82f6;
+    --analogy-text: #93c5fd;
+    --tech-bg: rgba(15,23,42,0.6);
+    --tech-border: rgba(51,65,85,0.6);
+    --tech-text: #cbd5e1;
+    --code-bg: rgba(96,165,250,0.15);
+    --divider: rgba(51,65,85,0.5);
+    --sidebar-hover: rgba(30,41,59,0.7);
+    --sidebar-active: rgba(30,58,138,0.4);
+    --toc-num-bg: rgba(30,41,59,0.8);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text); min-height: 100vh;
+    background: var(--bg);
+    transition: background 0.3s, color 0.3s;
+  }
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar — transparent, unified with main background */
+  .sidebar {
+    width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    background: transparent;
+    border-right: 1px solid var(--accent-light);
+    padding: 48px 0 40px;
+  }
+  .sidebar-brand { padding: 0 20px 24px; margin-bottom: 16px; }
+  .sidebar-brand .logo { font-size: 1.1rem; font-weight: 800; color: var(--accent); text-decoration: none; display: block; }
+  .sidebar-brand .logo:hover { opacity: 0.8; }
+  .sidebar-brand .tagline { font-size: 0.72rem; color: var(--text-faint); margin-top: 2px; }
+  /* Toggle row — holds theme and optional lang pill */
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  /* Shared pill style */
+  .theme-toggle, .lang-toggle {
+    background: none; border: 1px solid var(--accent-border);
+    border-radius: 20px; width: 52px; height: 28px; padding: 0;
+    cursor: pointer; position: relative; flex-shrink: 0;
+  }
+  .toggle-thumb, .lang-thumb {
+    position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--accent);
+    transition: transform 0.3s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; line-height: 1; color: #fff;
+  }
+  [data-theme="dark"] .toggle-thumb { transform: translateX(24px); }
+  [data-lang="secondary"] .lang-thumb { transform: translateX(24px); }
+  .toc-group { margin-bottom: 6px; }
+  .toc-group-label { display: block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); padding: 8px 20px 4px; text-decoration: none; transition: color 0.15s; }
+  a.toc-group-label:hover { color: var(--accent); }
+  .toc-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s, color 0.15s, border-color 0.15s; line-height: 1.3; }
+  .toc-item:hover { background: var(--sidebar-hover); color: var(--text); }
+  .toc-item.active { background: var(--sidebar-active); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .toc-item .toc-num { width: 20px; height: 20px; border-radius: 50%; background: var(--toc-num-bg); color: var(--text-muted); font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .toc-item.active .toc-num { background: var(--accent); color: #fff; }
+  .toc-item .toc-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; padding: 48px 40px 80px 40px; }
+  h1 { font-size: 2rem; font-weight: 800; color: var(--heading); margin-bottom: 6px; }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 48px; }
+  .section-h1 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 18px; margin-top: 48px; scroll-margin-top: 24px; }
+  .section-label { font-size: 0.95rem; font-weight: 700; color: var(--heading); margin-bottom: 14px; scroll-margin-top: 24px; border-left: 3px solid var(--accent); padding-left: 10px; }
+
+  /* Flow cards */
+  .flow { display: flex; align-items: stretch; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
+  .flow-step { flex: 1; min-width: 155px; }
+  .step-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 16px 14px; height: 100%;
+    box-shadow: 0 2px 16px var(--card-shadow), 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.18s, transform 0.18s, background 0.18s;
+  }
+  .step-card:hover {
+    background: var(--card-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px var(--card-shadow-hover), 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .step-emoji { font-size: 1.5rem; flex-shrink: 0; }
+  .step-plain { display: none; }
+  .step-title { font-size: 0.92rem; font-weight: 700; color: var(--heading); margin-bottom: 0; line-height: 1.3; }
+  .step-title a { color: inherit; text-decoration: none; border-bottom: 1.5px dashed var(--analogy-border); }
+  .step-title a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .step-tech  { font-size: 0.68rem; font-family: 'SF Mono','Fira Code',monospace; color: var(--text-faint); margin-bottom: 7px; word-break: break-word; overflow-wrap: break-word; }
+  .step-desc  { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55; }
+
+  /* Container/sandbox section */
+  .container-section {
+    background: var(--container-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1.5px dashed var(--container-border);
+    border-radius: 16px; padding: 28px 20px 20px; margin-bottom: 32px; position: relative;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .container-badge {
+    position: absolute; top: -13px; left: 20px;
+    background: var(--badge-bg); backdrop-filter: blur(8px);
+    border: 1px solid var(--container-border);
+    border-radius: 20px; padding: 3px 14px;
+    font-size: 0.72rem; font-weight: 700; color: var(--accent); letter-spacing: 0.04em;
+  }
+  .container-inner { display: flex; gap: 12px; flex-wrap: wrap; }
+  .container-inner .step-card { flex: 1; min-width: 145px; }
+
+  /* Content width constraint */
+  .main-inner { max-width: 860px; margin: 0 auto; }
+
+  /* Architecture overview diagram container */
+  .diagram-container {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--card-border);
+    border-radius: 14px; padding: 24px; margin: 0 0 32px;
+    box-shadow: 0 2px 16px var(--card-shadow);
+    overflow-x: auto;
+  }
+
+  /* Concepts — collapsible */
+  .concept {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 2px 16px var(--card-shadow);
+    border-radius: 14px; padding: 0; margin-bottom: 14px; overflow: hidden;
+  }
+  .concept-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .concept-header:hover { background: var(--concept-hover); }
+  .concept-icon { font-size: 1.4rem; flex-shrink: 0; }
+  .concept-label { display: none; }
+  .concept-title { font-size: 0.95rem; font-weight: 700; color: var(--heading); }
+  .concept-toggle { margin-left: auto; color: var(--text-faint); font-size: 1rem; transition: transform 0.2s; flex-shrink: 0; }
+  .concept-body { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; padding: 0 20px 20px; border-top: 1px solid var(--divider); }
+  .concept-body p { margin-bottom: 10px; margin-top: 12px; }
+  .concept-body strong { color: var(--text); }
+  .concept-body code { font-family: monospace; color: var(--accent); background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
+  .concept-body ul { padding-left: 18px; margin-bottom: 10px; }
+  .concept-body li { margin-bottom: 5px; }
+  .concept-body .analogy { background: var(--analogy-bg); border-left: 3px solid var(--analogy-border); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; font-style: italic; color: var(--analogy-text); }
+  .concept-body .tech-box { background: var(--tech-bg); border: 1px solid var(--tech-border); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-family: monospace; font-size: 0.76rem; color: var(--tech-text); overflow-x: auto; word-break: break-all; white-space: pre-wrap; }
+
+  /* Reference grid */
+  .ref-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 40px; }
+  .ref-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 2px 12px var(--card-shadow);
+    border-radius: 12px; padding: 16px 14px;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .ref-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px var(--card-shadow-hover); }
+  .ref-title { font-size: 0.85rem; font-weight: 700; color: var(--heading); margin-bottom: 4px; }
+  .ref-file  { font-size: 0.7rem; font-family: monospace; color: var(--accent); margin-bottom: 8px; word-break: break-all; }
+  .ref-desc  { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+
+  hr { border: none; border-top: 1px solid var(--divider); margin: 40px 0; }
+  .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
+  .collapsible-body.collapsed { max-height: 0; }
+  .collapsible-body.expanded  { max-height: 3000px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 24px 16px 60px; }
+    .ref-grid { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    .sidebar, .toggle-row { display: none; }
+    body { background: white; color: black; }
+    .step-card, .concept, .ref-card, .diagram-container { backdrop-filter: none; background: white; border: 1px solid #ddd; box-shadow: none; }
+    .collapsible-body { max-height: none !important; }
+    [data-theme="dark"] { --bg: #fff; --text: #1e293b; --heading: #0f172a; --text-secondary: #475569; --text-muted: #64748b; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <!-- Logo links back to top of page -->
+      <a class="logo" href="#">{PROJECT_NAME}</a>
+      <div class="tagline">Architecture Guide</div>
+      <div class="toggle-row">
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <span class="toggle-thumb">☀️</span>
+        </button>
+        <!-- If --lang flag was given, include lang toggle; otherwise omit this button entirely -->
+        <!-- LANG_TOGGLE_PLACEHOLDER: replace with the button below if --lang was specified:
+        <button class="lang-toggle" onclick="toggleLang()" aria-label="Switch language">
+          <span class="lang-thumb">EN</span>
+        </button>
+        -->
+      </div>
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#overview-section">Overview</a>
+    </div>
+
+    <div class="toc-group">
+      <!-- Group label links to the matching section-h1 heading — name must match exactly -->
+      <a class="toc-group-label" href="#flow-section">How It Works</a>
+      <!-- One toc-item per step -->
+      <a class="toc-item" href="#step1"><span class="toc-num">1</span> {STEP_1_TITLE}</a>
+      <a class="toc-item" href="#step2"><span class="toc-num">2</span> {STEP_2_TITLE}</a>
+      <!-- ...repeat for each step... -->
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#concepts-section">Key Concepts</a>
+      <a class="toc-item" href="#concept-{name}"><span class="toc-icon">{EMOJI}</span> {CONCEPT_TITLE}</a>
+      <!-- ...repeat... -->
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#reference">Key Files &amp; Directories</a>
+    </div>
+  </aside>
+
+  <main class="main">
+  <div class="main-inner">
+    <h1>{PROJECT_NAME} Architecture</h1>
+    <p class="subtitle">{ONE_LINE_DESCRIPTION}</p>
+
+    <!-- === OVERVIEW DIAGRAM === -->
+    <!-- TOC label text must match this heading exactly -->
+    <div class="section-h1" id="overview-section">Overview</div>
+    <div class="diagram-container">
+      <!-- SVG architecture overview — generated in Phase 4 (see diagram instructions) -->
+      {SVG_DIAGRAM}
+    </div>
+
+    <!-- === HOW IT WORKS === -->
+    <div class="section-h1" id="flow-section">How It Works</div>
+
+    <!-- Repeat for each step -->
+    <div class="section-label" id="step1">Step 1 — {STEP_TITLE}</div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header">
+          <span class="step-emoji">{EMOJI}</span>
+          <div class="step-title">{TITLE_OR_LINKED_TITLE}</div>
+        </div>
+        <div class="step-tech">{src/file.ts → verifiedFunction()}</div>
+        <div class="step-desc">{PLAIN_ENGLISH_DESCRIPTION — no jargon}</div>
+      </div></div>
+    </div>
+
+    <!-- Use .container-section for isolated sandbox/worker steps -->
+    <!--
+    <div class="container-section">
+      <div class="container-badge">🔒 {ISOLATION_LABEL}</div>
+      <div class="container-inner">
+        ...step-cards (same structure as above)...
+      </div>
+    </div>
+    -->
+
+    <!-- === KEY CONCEPTS === -->
+    <div class="section-h1" id="concepts-section">Key Concepts</div>
+
+    <!-- Repeat for each concept — first one expanded, rest collapsed -->
+    <div id="concept-{name}" class="concept">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">{EMOJI}</span>
+        <div>
+          <div class="concept-label">Concept</div>
+          <div class="concept-title">{CONCEPT_TITLE}</div>
+        </div>
+        <span class="concept-toggle">▾</span>
+      </div>
+      <div class="collapsible-body expanded"><div class="concept-body">
+        <!-- Analogy FIRST, always — make the reader nod before any technical word -->
+        <div class="analogy">{ANALOGY — everyday comparison, no jargon}</div>
+        <p>{PLAIN_ENGLISH_EXPLANATION}</p>
+        <ul>
+          <li><strong>{POINT}</strong> — {EXPLANATION}</li>
+        </ul>
+        <div class="tech-box">{VERIFIED_CODE_EXAMPLE}</div>
+      </div></div>
+    </div>
+
+    <!-- === KEY FILES & DIRECTORIES === -->
+    <!-- Heading text must match TOC label exactly -->
+    <div class="section-h1" id="reference">Key Files &amp; Directories</div>
+    <div class="ref-grid">
+      <div class="ref-card">
+        <div class="ref-title">{EMOJI} {TITLE}</div>
+        <div class="ref-file">{verified/file/path.ts}</div>
+        <div class="ref-desc">{DESCRIPTION}</div>
+      </div>
+      <!-- ...repeat... -->
+    </div>
+
+  </div><!-- end main-inner -->
+  </main>
+</div>
+
+<script>
+// Theme toggle
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  var thumb = document.querySelector('.toggle-thumb');
+  if (thumb) thumb.textContent = theme === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('arch-doc-theme', theme);
+}
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+(function() {
+  var saved = localStorage.getItem('arch-doc-theme');
+  if (saved) applyTheme(saved);
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) applyTheme('dark');
+})();
+
+// Language toggle — only included when --lang flag was specified
+// The T object must be generated by the agent with all page text in both languages.
+// Structure:
+//   var T = {
+//     en: { 'page-title': '...', 'h1': '...', 'subtitle': '...', 'tagline': '...', /* step titles, descs, concept titles/bodies, ref cards, SVG labels... */ },
+//     {LANG}: { /* same keys, translated */ }
+//   };
+// applyLang() must update: document.title, h1, subtitle, tagline, all TOC items, section headings,
+// step card content, concept content, ref card content, and SVG <text> elements.
+// Always call attachStepTitleLinks() at the end of applyLang() so concept links survive innerHTML swaps.
+function attachStepTitleLinks() {
+  document.querySelectorAll('.step-title a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) { e.preventDefault(); scrollToId(a.getAttribute('href').slice(1)); });
+  });
+}
+// var T = { en: { ... }, {LANG}: { ... } };  ← generate this object with all translations
+function applyLang(lang) {
+  var t = T[lang];
+  // update all elements using their IDs or structural selectors
+  var lt = document.querySelector('.lang-thumb'); if (lt) lt.textContent = lang === 'en' ? 'EN' : '{LANG_ABBR}';
+  document.documentElement.setAttribute('data-lang', lang === 'en' ? 'primary' : 'secondary');
+  localStorage.setItem('arch-doc-lang', lang);
+  attachStepTitleLinks();
+}
+function toggleLang() {
+  var isSecondary = document.documentElement.getAttribute('data-lang') === 'secondary';
+  applyLang(isSecondary ? 'en' : '{LANG}');
+}
+(function() {
+  var saved = localStorage.getItem('arch-doc-lang');
+  if (saved && saved !== 'en') applyLang(saved);
+})();
+
+// Collapsible concepts
+function toggle(header) {
+  var body = header.parentElement.querySelector('.collapsible-body');
+  var arrow = header.querySelector('.concept-toggle');
+  if (body.classList.contains('expanded')) {
+    body.classList.replace('expanded','collapsed');
+    arrow.style.transform = 'rotate(-90deg)';
+  } else {
+    body.classList.replace('collapsed','expanded');
+    arrow.style.transform = '';
+  }
+}
+
+function scrollToId(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var body = el.querySelector('.collapsible-body');
+  if (body && body.classList.contains('collapsed')) {
+    body.classList.replace('collapsed','expanded');
+    var arrow = el.querySelector('.concept-toggle');
+    if (arrow) arrow.style.transform = '';
+  }
+  setTimeout(function() { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+}
+
+const sectionIds = Array.from(document.querySelectorAll('[id]'))
+  .filter(el => el.classList.contains('section-label') || el.classList.contains('section-h1') || el.classList.contains('concept'))
+  .map(el => el.id).filter(Boolean);
+
+function updateToc() {
+  let current = sectionIds[0];
+  for (const id of sectionIds) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= 60) current = id;
+  }
+  document.querySelectorAll('.toc-item').forEach(a =>
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current));
+}
+window.addEventListener('scroll', updateToc, { passive: true });
+updateToc();
+
+document.querySelectorAll('.toc-item, a.toc-group-label, .sidebar-brand .logo').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if (!href || href === '#') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    e.preventDefault(); scrollToId(href.slice(1));
+  });
+});
+attachStepTitleLinks();
+
+</script>
+</body>
+</html>
