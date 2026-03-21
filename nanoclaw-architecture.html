@@ -3,150 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NanoClaw architecture documentation — interactive guide with data flow, patterns, and key concepts.">
 <title>NanoClaw Architecture</title>
 <style>
+  :root {
+    --bg: #f1f5f9;
+    --text: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-faint: #94a3b8;
+    --heading: #0f172a;
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --accent-light: rgba(147,197,253,0.25);
+    --accent-bg: rgba(219,234,254,0.5);
+    --accent-border: rgba(147,197,253,0.5);
+    --card-bg: rgba(255,255,255,0.65);
+    --card-border: rgba(255,255,255,0.9);
+    --card-hover: rgba(255,255,255,0.85);
+    --card-shadow: rgba(37,99,235,0.06);
+    --card-shadow-hover: rgba(37,99,235,0.13);
+    --container-bg: rgba(239,246,255,0.55);
+    --container-border: rgba(147,197,253,0.6);
+    --badge-bg: rgba(255,255,255,0.9);
+    --concept-hover: rgba(239,246,255,0.6);
+    --analogy-bg: rgba(239,246,255,0.7);
+    --analogy-border: #93c5fd;
+    --analogy-text: #1d4ed8;
+    --tech-bg: rgba(248,250,252,0.8);
+    --tech-border: rgba(226,232,240,0.7);
+    --tech-text: #475569;
+    --code-bg: rgba(219,234,254,0.4);
+    --divider: rgba(226,232,240,0.5);
+    --sidebar-hover: rgba(239,246,255,0.7);
+    --sidebar-active: rgba(219,234,254,0.6);
+    --toc-num-bg: rgba(241,245,249,0.8);
+  }
+  [data-theme="dark"] {
+    --bg: #0f172a; --text: #e2e8f0; --text-secondary: #cbd5e1; --text-muted: #94a3b8;
+    --text-faint: #64748b; --heading: #f1f5f9; --accent: #60a5fa; --accent-dark: #93c5fd;
+    --accent-light: rgba(96,165,250,0.15); --accent-bg: rgba(96,165,250,0.15);
+    --accent-border: rgba(96,165,250,0.3); --card-bg: rgba(30,41,59,0.65);
+    --card-border: rgba(51,65,85,0.6); --card-hover: rgba(30,41,59,0.85);
+    --card-shadow: rgba(0,0,0,0.2); --card-shadow-hover: rgba(96,165,250,0.15);
+    --container-bg: rgba(30,41,59,0.55); --container-border: rgba(96,165,250,0.3);
+    --badge-bg: rgba(30,41,59,0.9); --concept-hover: rgba(30,41,59,0.8);
+    --analogy-bg: rgba(30,58,138,0.3); --analogy-border: #3b82f6; --analogy-text: #93c5fd;
+    --tech-bg: rgba(15,23,42,0.6); --tech-border: rgba(51,65,85,0.6); --tech-text: #cbd5e1;
+    --code-bg: rgba(96,165,250,0.15); --divider: rgba(51,65,85,0.5);
+    --sidebar-hover: rgba(30,41,59,0.7); --sidebar-active: rgba(30,58,138,0.4);
+    --toc-num-bg: rgba(30,41,59,0.8);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: #1e293b; min-height: 100vh;
-    background: #f1f5f9;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); min-height: 100vh; background: var(--bg); transition: background 0.3s, color 0.3s; }
   .layout { display: flex; min-height: 100vh; }
-
-  /* Sidebar */
-  .sidebar {
-    width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
-    background: transparent;
-    border-right: 1px solid rgba(147,197,253,0.25);
-    padding: 48px 0 40px;
-  }
-  .sidebar-brand { padding: 0 20px 24px; border-bottom: 1px solid rgba(147,197,253,0.25); margin-bottom: 16px; }
-  .sidebar-brand .logo { font-size: 1.1rem; font-weight: 800; color: #2563eb; text-decoration: none; display: block; }
+  .sidebar { width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: transparent; border-right: 1px solid var(--accent-light); padding: 48px 0 40px; }
+  .sidebar-brand { padding: 0 20px 24px; margin-bottom: 16px; }
+  .sidebar-brand .logo { font-size: 1.1rem; font-weight: 800; color: var(--accent); text-decoration: none; display: block; }
   .sidebar-brand .logo:hover { opacity: 0.8; }
-  .sidebar-brand .tagline { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; }
+  .sidebar-brand .tagline { font-size: 0.72rem; color: var(--text-faint); margin-top: 2px; }
+  .toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .theme-toggle { background: none; border: 1px solid var(--accent-border); border-radius: 20px; width: 52px; height: 28px; padding: 0; cursor: pointer; position: relative; transition: background 0.3s, border-color 0.3s; flex-shrink: 0; }
+  .theme-toggle .toggle-track { position: absolute; inset: 2px; border-radius: 20px; background: var(--accent-bg); transition: background 0.3s; }
+  .theme-toggle .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); transition: transform 0.3s, background 0.3s; display: flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; }
+  [data-theme="dark"] .theme-toggle .toggle-thumb { transform: translateX(24px); }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle:hover .toggle-thumb { box-shadow: 0 0 8px var(--card-shadow-hover); }
+  .lang-toggle { background: none; border: 1px solid var(--accent-border); border-radius: 20px; width: 52px; height: 28px; padding: 0; cursor: pointer; position: relative; transition: border-color 0.3s; flex-shrink: 0; }
+  .lang-toggle .lang-track { position: absolute; inset: 2px; border-radius: 20px; background: var(--accent-bg); transition: background 0.3s; }
+  .lang-toggle .lang-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); transition: transform 0.3s; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 700; color: white; line-height: 1; }
+  [data-lang="zh"] .lang-toggle .lang-thumb { transform: translateX(24px); }
+  .lang-toggle:hover { border-color: var(--accent); }
+  .lang-toggle:hover .lang-thumb { box-shadow: 0 0 8px var(--card-shadow-hover); }
   .toc-group { margin-bottom: 6px; }
-  .toc-group-label { display: block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #94a3b8; padding: 8px 20px 4px; text-decoration: none; transition: color 0.15s; }
-  a.toc-group-label:hover { color: #2563eb; }
-  .toc-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; font-size: 0.82rem; color: #64748b; cursor: pointer; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s, color 0.15s, border-color 0.15s; line-height: 1.3; }
-  .toc-item:hover { background: rgba(239,246,255,0.7); color: #1e293b; }
-  .toc-item.active { background: rgba(219,234,254,0.6); color: #2563eb; border-left-color: #2563eb; font-weight: 600; }
-  .toc-item .toc-num { width: 20px; height: 20px; border-radius: 50%; background: rgba(241,245,249,0.8); color: #64748b; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
-  .toc-item.active .toc-num { background: #2563eb; color: #fff; }
+  .toc-group-label { display: block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); padding: 8px 20px 4px; text-decoration: none; transition: color 0.15s; }
+  a.toc-group-label:hover { color: var(--accent); }
+  .toc-item { display: flex; align-items: center; gap: 8px; padding: 7px 20px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; text-decoration: none; border-left: 3px solid transparent; transition: background 0.15s, color 0.15s, border-color 0.15s; line-height: 1.3; }
+  .toc-item:hover { background: var(--sidebar-hover); color: var(--text); }
+  .toc-item.active { background: var(--sidebar-active); color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+  .toc-item .toc-num { width: 20px; height: 20px; border-radius: 50%; background: var(--toc-num-bg); color: var(--text-muted); font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .toc-item.active .toc-num { background: var(--accent); color: #fff; }
   .toc-item .toc-icon { font-size: 0.9rem; flex-shrink: 0; }
-
-  /* Main */
   .main { flex: 1; min-width: 0; padding: 48px 40px 80px 40px; }
-  h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
-  .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 48px; }
-  .section-label { font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 14px; scroll-margin-top: 24px; border-left: 3px solid #2563eb; padding-left: 10px; }
-  .section-h1 { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 18px; margin-top: 48px; scroll-margin-top: 24px; padding-left: 0; border-left: none; }
-
-  /* Flow cards — glassmorphic */
+  .main-inner { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 2rem; font-weight: 800; color: var(--heading); margin-bottom: 6px; }
+  .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 48px; }
+  .section-h1 { font-size: 1.2rem; font-weight: 800; color: var(--heading); margin-bottom: 18px; margin-top: 48px; scroll-margin-top: 24px; }
+  .section-label { font-size: 0.95rem; font-weight: 700; color: var(--heading); margin-bottom: 14px; scroll-margin-top: 24px; border-left: 3px solid var(--accent); padding-left: 10px; }
   .flow { display: flex; align-items: stretch; gap: 10px; margin-bottom: 32px; flex-wrap: wrap; }
   .flow-step { flex: 1; min-width: 155px; }
-  .step-card {
-    background: rgba(255,255,255,0.65);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.9);
-    border-top: 2px solid rgba(147,197,253,0.4);
-    border-radius: 14px; padding: 16px 14px; height: 100%;
-    box-shadow: 0 2px 16px rgba(37,99,235,0.06), 0 1px 3px rgba(0,0,0,0.04);
-    transition: box-shadow 0.18s, transform 0.18s, border-top-color 0.18s, background 0.18s;
-  }
-  .step-card:hover {
-    background: rgba(255,255,255,0.85);
-    border-top-color: #2563eb;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 32px rgba(37,99,235,0.13), 0 2px 8px rgba(0,0,0,0.06);
-  }
-  .step-card.blue, .step-card.yellow, .step-card.green,
-  .step-card.purple, .step-card.orange, .step-card.teal, .step-card.rose { border-top: 2px solid rgba(147,197,253,0.4); }
+  .step-card { background: var(--card-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 14px; height: 100%; box-shadow: 0 2px 16px var(--card-shadow), 0 1px 3px rgba(0,0,0,0.04); transition: box-shadow 0.18s, transform 0.18s, border-top-color 0.18s, background 0.18s; }
+  .step-card:hover { background: var(--card-hover); transform: translateY(-3px); box-shadow: 0 8px 32px var(--card-shadow-hover), 0 2px 8px rgba(0,0,0,0.06); }
   .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .step-emoji { font-size: 1.5rem; flex-shrink: 0; }
-  .step-plain { display: none; }
-  .step-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; margin-bottom: 0; line-height: 1.3; }
-  .step-title a { color: inherit; text-decoration: none; border-bottom: 1.5px dashed #93c5fd; }
-  .step-title a:hover { color: #2563eb; border-bottom-color: #2563eb; }
-  .step-tech  { font-size: 0.68rem; font-family: 'SF Mono','Fira Code',monospace; color: #94a3b8; margin-bottom: 7px; word-break: break-word; overflow-wrap: break-word; }
-  .step-desc  { font-size: 0.78rem; color: #475569; line-height: 1.55; }
-  .step-tag   {
-    display: inline-block; font-size: 0.63rem; font-family: monospace;
-    background: rgba(219,234,254,0.5); color: #1d4ed8;
-    border: 1px solid rgba(147,197,253,0.5);
-    border-radius: 4px; padding: 1px 5px; margin-top: 5px; margin-right: 3px;
-    word-break: break-all; white-space: normal; max-width: 100%;
-  }
-  .step-tag.g, .step-tag.y, .step-tag.p, .step-tag.r {
-    background: rgba(219,234,254,0.5); color: #1d4ed8; border-color: rgba(147,197,253,0.5);
-  }
+  .step-title { font-size: 0.92rem; font-weight: 700; color: var(--heading); margin-bottom: 0; line-height: 1.3; }
+  .step-title a { color: inherit; text-decoration: none; border-bottom: 1.5px dashed var(--analogy-border); }
+  .step-title a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .step-tech { font-size: 0.68rem; font-family: 'SF Mono','Fira Code',monospace; color: var(--text-faint); margin-bottom: 7px; word-break: break-word; overflow-wrap: break-word; }
+  .step-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55; }
 
-  /* Container box */
-  .container-section {
-    background: rgba(239,246,255,0.55);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1.5px dashed rgba(147,197,253,0.6);
-    border-radius: 16px; padding: 28px 20px 20px; margin-bottom: 32px; position: relative;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-  }
-  .container-badge {
-    position: absolute; top: -13px; left: 20px;
-    background: rgba(255,255,255,0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(147,197,253,0.6);
-    border-radius: 20px; padding: 3px 14px;
-    font-size: 0.72rem; font-weight: 700; color: #2563eb; letter-spacing: 0.04em;
-  }
+  .container-section { background: var(--container-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1.5px dashed var(--container-border); border-radius: 16px; padding: 28px 20px 20px; margin-bottom: 32px; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
+  .container-badge { position: absolute; top: -13px; left: 20px; background: var(--badge-bg); backdrop-filter: blur(8px); border: 1px solid var(--container-border); border-radius: 20px; padding: 3px 14px; font-size: 0.72rem; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
   .container-inner { display: flex; gap: 12px; flex-wrap: wrap; }
   .container-inner .step-card { flex: 1; min-width: 145px; }
-
-  /* Concepts */
-  .concept {
-    background: rgba(255,255,255,0.65);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.9);
-    box-shadow: 0 2px 16px rgba(37,99,235,0.05);
-    border-radius: 14px; padding: 0; margin-bottom: 14px; overflow: hidden;
-  }
+  .mermaid-container { background: var(--card-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--card-border); border-radius: 14px; padding: 24px; margin: 24px 0 32px; text-align: center; box-shadow: 0 2px 16px var(--card-shadow); overflow-x: auto; }
+  .diagram-svg { max-width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 10px; }
+  [data-theme="dark"] .diagram-svg rect[fill="#eff6ff"] { fill: #1e293b; }
+  [data-theme="dark"] .diagram-svg rect[fill="#dbeafe"] { fill: #1e3a5f; }
+  [data-theme="dark"] .diagram-svg rect[fill="rgba(239,246,255,0.7)"] { fill: rgba(30,41,59,0.8); }
+  [data-theme="dark"] .diagram-svg rect[stroke="#bfdbfe"] { stroke: #334155; }
+  [data-theme="dark"] .diagram-svg rect[stroke="#93c5fd"] { stroke: #2563eb; }
+  [data-theme="dark"] .diagram-svg rect[stroke="#60a5fa"] { stroke: #3b82f6; }
+  [data-theme="dark"] .diagram-svg text[fill="#1d4ed8"] { fill: #93c5fd; }
+  [data-theme="dark"] .diagram-svg text[fill="#1e40af"] { fill: #bfdbfe; }
+  [data-theme="dark"] .diagram-svg text[fill="#60a5fa"] { fill: #7dd3fc; }
+  [data-theme="dark"] .diagram-svg text[fill="#2563eb"] { fill: #60a5fa; }
+  [data-theme="dark"] .diagram-svg text[fill="#94a3b8"] { fill: #475569; }
+  [data-theme="dark"] .diagram-svg line[stroke="#cbd5e1"] { stroke: #334155; }
+  [data-theme="dark"] .diagram-svg path[stroke="#2563eb"] { stroke: #60a5fa; }
+  .concept { background: var(--card-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--card-border); box-shadow: 0 2px 16px var(--card-shadow); border-radius: 14px; padding: 0; margin-bottom: 14px; overflow: hidden; }
   .concept-header { display: flex; align-items: center; gap: 12px; padding: 18px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
-  .concept-header:hover { background: rgba(239,246,255,0.6); }
+  .concept-header:hover { background: var(--concept-hover); }
   .concept-icon { font-size: 1.4rem; flex-shrink: 0; }
-  .concept-label { display: none; }
-  .concept-title { font-size: 0.95rem; font-weight: 700; color: #0f172a; }
-  .concept-toggle { margin-left: auto; color: #94a3b8; font-size: 1rem; transition: transform 0.2s; flex-shrink: 0; }
-  .concept-body { font-size: 0.82rem; color: #475569; line-height: 1.7; padding: 0 20px 20px; border-top: 1px solid rgba(226,232,240,0.6); }
+
+  .concept-title { font-size: 0.95rem; font-weight: 700; color: var(--heading); }
+  .concept-toggle { margin-left: auto; color: var(--text-faint); font-size: 1rem; transition: transform 0.2s; flex-shrink: 0; }
+  .concept-body { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; padding: 0 20px 20px; border-top: 1px solid var(--divider); }
   .concept-body p { margin-bottom: 10px; margin-top: 12px; }
-  .concept-body strong { color: #1e293b; }
-  .concept-body code { font-family: monospace; color: #2563eb; background: rgba(219,234,254,0.4); padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
+  .concept-body strong { color: var(--text); }
+  .concept-body code { font-family: monospace; color: var(--accent); background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
   .concept-body ul { padding-left: 18px; margin-bottom: 10px; }
   .concept-body li { margin-bottom: 5px; }
-  .concept-body .analogy { background: rgba(239,246,255,0.7); border-left: 3px solid #93c5fd; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; font-style: italic; color: #1d4ed8; }
-  .concept-body .tech-box { background: rgba(248,250,252,0.8); border: 1px solid rgba(226,232,240,0.7); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-family: monospace; font-size: 0.76rem; color: #475569; overflow-x: auto; word-break: break-all; white-space: pre-wrap; }
-
-  /* Reference grid */
+  .concept-body .analogy { background: var(--analogy-bg); border-left: 3px solid var(--analogy-border); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 14px 0; font-style: italic; color: var(--analogy-text); }
+  .concept-body .tech-box { background: var(--tech-bg); border: 1px solid var(--tech-border); border-radius: 8px; padding: 12px 14px; margin: 10px 0; font-family: monospace; font-size: 0.76rem; color: var(--tech-text); overflow-x: auto; word-break: break-all; white-space: pre-wrap; }
   .ref-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 40px; }
-  .ref-card {
-    background: rgba(255,255,255,0.65);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.9);
-    box-shadow: 0 2px 12px rgba(37,99,235,0.05);
-    border-radius: 12px; padding: 16px 14px;
-    transition: box-shadow 0.15s, transform 0.15s;
-  }
-  .ref-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(37,99,235,0.1); }
-  .ref-title { font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
-  .ref-file  { font-size: 0.7rem; font-family: monospace; color: #2563eb; margin-bottom: 8px; word-break: break-all; }
-  .ref-desc  { font-size: 0.78rem; color: #64748b; line-height: 1.5; }
-
-  hr { border: none; border-top: 1px solid rgba(226,232,240,0.5); margin: 40px 0; }
+  .ref-card { background: var(--card-bg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--card-border); box-shadow: 0 2px 12px var(--card-shadow); border-radius: 12px; padding: 16px 14px; transition: box-shadow 0.15s, transform 0.15s; }
+  .ref-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px var(--card-shadow-hover); }
+  .ref-title { font-size: 0.85rem; font-weight: 700; color: var(--heading); margin-bottom: 4px; }
+  .ref-file { font-size: 0.7rem; font-family: monospace; color: var(--accent); margin-bottom: 8px; word-break: break-all; }
+  .ref-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+  hr { border: none; border-top: 1px solid var(--divider); margin: 40px 0; }
   .collapsible-body { overflow: hidden; transition: max-height 0.3s ease; }
   .collapsible-body.collapsed { max-height: 0; }
-  .collapsible-body.expanded  { max-height: 3000px; }
-
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .main { padding: 24px 16px 60px; }
-    .ref-grid { grid-template-columns: 1fr; }
-  }
+  .collapsible-body.expanded { max-height: 3000px; }
+  @media (max-width: 768px) { .sidebar { display: none; } .main { padding: 24px 16px 60px; } .ref-grid { grid-template-columns: 1fr; } }
+  @media print { .sidebar, .theme-toggle, .toggle-row { display: none; } body { background: white; color: black; } .step-card, .concept, .ref-card, .diagram-container { backdrop-filter: none; background: white; border: 1px solid #ddd; box-shadow: none; } .collapsible-body { max-height: none !important; } [data-theme="dark"] { --bg: #fff; --text: #1e293b; --heading: #0f172a; --text-secondary: #475569; --text-muted: #64748b; } }
 </style>
 </head>
 <body>
@@ -155,551 +156,487 @@
   <aside class="sidebar">
     <div class="sidebar-brand">
       <a class="logo" href="#">NanoClaw</a>
-      <div class="tagline">Architecture Overview</div>
+      <div class="tagline">Architecture Guide</div>
+      <div class="toggle-row">
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode"><span class="toggle-track"></span><span class="toggle-thumb">☀️</span></button>
+        <button class="lang-toggle" onclick="toggleLang()" aria-label="Switch language"><span class="lang-track"></span><span class="lang-thumb">EN</span></button>
+      </div>
+    </div>
+
+    <div class="toc-group">
+      <a class="toc-group-label" href="#overview-section">Overview</a>
     </div>
 
     <div class="toc-group">
       <a class="toc-group-label" href="#flow-section">How It Works</a>
-      <a class="toc-item" href="#step1">
-        <span class="toc-num">1</span>
-        <span>Message arrives</span>
-      </a>
-      <a class="toc-item" href="#step2">
-        <span class="toc-num">2</span>
-        <span>Who's allowed in?</span>
-      </a>
-      <a class="toc-item" href="#step3">
-        <span class="toc-num">3</span>
-        <span>Line up &amp; wait</span>
-      </a>
-      <a class="toc-item" href="#step4">
-        <span class="toc-num">4</span>
-        <span>AI thinks it over</span>
-      </a>
-      <a class="toc-item" href="#step5">
-        <span class="toc-num">5</span>
-        <span>Reply goes back</span>
-      </a>
-      <a class="toc-item" href="#step6">
-        <span class="toc-num">6</span>
-        <span>Scheduled tasks</span>
-      </a>
+      <a class="toc-item" href="#step1"><span class="toc-num">1</span> Message arrives</a>
+      <a class="toc-item" href="#step2"><span class="toc-num">2</span> Stored &amp; checked</a>
+      <a class="toc-item" href="#step3"><span class="toc-num">3</span> Queue &amp; wait</a>
+      <a class="toc-item" href="#step4"><span class="toc-num">4</span> Agent container starts</a>
+      <a class="toc-item" href="#step5"><span class="toc-num">5</span> AI thinks &amp; acts</a>
+      <a class="toc-item" href="#step6"><span class="toc-num">6</span> Reply sent back</a>
     </div>
 
     <div class="toc-group">
       <a class="toc-group-label" href="#concepts-section">Key Concepts</a>
-      <a class="toc-item" href="#concept-webhook">
-        <span class="toc-icon">🔔</span>
-        <span>Webhook</span>
-      </a>
-      <a class="toc-item" href="#concept-docker">
-        <span class="toc-icon">🐳</span>
-        <span>Docker Containers</span>
-      </a>
-      <a class="toc-item" href="#concept-credential-proxy">
-        <span class="toc-icon">🔑</span>
-        <span>Credential Proxy</span>
-      </a>
-      <a class="toc-item" href="#concept-queue">
-        <span class="toc-icon">🗂️</span>
-        <span>Message Queue</span>
-      </a>
-      <a class="toc-item" href="#concept-ipc">
-        <span class="toc-icon">📬</span>
-        <span>File-Based IPC</span>
-      </a>
-      <a class="toc-item" href="#concept-channel">
-        <span class="toc-icon">🌐</span>
-        <span>Channel Abstraction</span>
-      </a>
-      <a class="toc-item" href="#concept-skills">
-        <span class="toc-icon">🧩</span>
-        <span>Skills</span>
-      </a>
+      <a class="toc-item" href="#concept-channel"><span class="toc-icon">🔌</span> Channel abstraction</a>
+      <a class="toc-item" href="#concept-queue"><span class="toc-icon">🚦</span> Per-group queue</a>
+      <a class="toc-item" href="#concept-container"><span class="toc-icon">📦</span> Container isolation</a>
+      <a class="toc-item" href="#concept-proxy"><span class="toc-icon">🔑</span> Credential proxy</a>
+      <a class="toc-item" href="#concept-ipc"><span class="toc-icon">📬</span> File-based IPC</a>
+      <a class="toc-item" href="#concept-scheduler"><span class="toc-icon">⏰</span> Task scheduler</a>
     </div>
 
     <div class="toc-group">
-      <a class="toc-group-label" href="#reference">Key Files &amp; Directories</a>
+      <a class="toc-group-label" href="#reference">Key Files</a>
     </div>
   </aside>
 
   <main class="main">
+  <div class="main-inner">
     <h1>NanoClaw Architecture</h1>
-    <p class="subtitle">How a message travels from your chat app to an AI response — and back.</p>
+    <p class="subtitle">A personal Claude assistant — messages arrive from any chat platform, get routed to an isolated AI container, and replies flow back. Single Node.js process, multiple messaging platforms, zero secrets in containers.</p>
 
+    <div class="section-h1" id="overview-section">Overview</div>
+    <div class="mermaid-container" id="dataflow-diagram">
+<svg class="diagram-svg" width="900" height="458" viewBox="0 0 900 458" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#cbd5e1"/></marker>
+    <marker id="arr-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2563eb"/></marker>
+
+  </defs>
+  <rect width="900" height="458" fill="transparent" rx="14"/>
+
+  <!-- ══ INPUTS ══ -->
+  <text id="svg-lbl-inputs" x="30" y="18" font-size="10" font-weight="700" fill="#94a3b8" letter-spacing="1.5">INPUTS</text>
+
+  <rect x="30" y="30" width="148" height="50" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="104" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">💬 Lark</text>
+  <text id="svg-lark-sub" x="104" y="68" text-anchor="middle" font-size="9" fill="#60a5fa">Webhook</text>
+  <rect x="203" y="30" width="148" height="50" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="277" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">✈️ Telegram</text>
+  <text id="svg-tg-sub" x="277" y="68" text-anchor="middle" font-size="9" fill="#60a5fa">Polling</text>
+  <rect x="376" y="30" width="148" height="50" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text id="svg-sched-title" x="450" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">⏰ Scheduler</text>
+  <text id="svg-sched-sub" x="450" y="68" text-anchor="middle" font-size="9" fill="#60a5fa">Cron tasks</text>
+  <rect x="549" y="30" width="148" height="50" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="623" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">📁 IPC</text>
+  <text id="svg-ipc-sub" x="623" y="68" text-anchor="middle" font-size="9" fill="#60a5fa">File-based</text>
+  <rect x="722" y="30" width="148" height="50" rx="12" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text id="svg-remote-title" x="796" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">🖥️ Remote</text>
+  <text id="svg-remote-sub" x="796" y="68" text-anchor="middle" font-size="9" fill="#60a5fa">CLI control</text>
+
+  <!-- Arrows from inputs to core -->
+  <line x1="104" y1="80" x2="104" y2="116" stroke="#cbd5e1" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3,2"/>
+  <line x1="277" y1="80" x2="277" y2="116" stroke="#cbd5e1" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3,2"/>
+  <line x1="450" y1="80" x2="450" y2="116" stroke="#cbd5e1" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3,2"/>
+  <line x1="623" y1="80" x2="623" y2="116" stroke="#cbd5e1" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3,2"/>
+  <line x1="796" y1="80" x2="796" y2="116" stroke="#cbd5e1" stroke-width="1" marker-end="url(#arr)" stroke-dasharray="3,2"/>
+
+  <!-- ══ CORE ══ -->
+  <text id="svg-lbl-core" x="30" y="112" font-size="10" font-weight="700" fill="#94a3b8" letter-spacing="1.5">CORE</text>
+
+  <rect x="30" y="122" width="840" height="54" rx="12" fill="#eff6ff" stroke="#93c5fd"/>
+  <text id="svg-router-title" x="450" y="144" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">📬 Router</text>
+  <text id="svg-router-desc" x="450" y="162" text-anchor="middle" font-size="10" fill="#60a5fa">Trigger check · sender allowlist · dedup · stores to SQLite</text>
+
+  <line x1="450" y1="176" x2="450" y2="200" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+  <!-- ══ GROUP QUEUE ══ -->
+  <text id="svg-lbl-queue" x="30" y="208" font-size="10" font-weight="700" fill="#94a3b8" letter-spacing="1.5">GROUP QUEUE</text>
+
+  <rect x="30" y="214" width="840" height="46" rx="12" fill="#eff6ff" stroke="#93c5fd"/>
+  <text id="svg-queue-title" x="450" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">🗂️ Group Queue</text>
+  <text id="svg-queue-desc" x="450" y="248" text-anchor="middle" font-size="9" fill="#3b82f6">One queue per chat · serialises concurrent messages</text>
+
+  <line x1="450" y1="260" x2="450" y2="284" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-b)"/>
+
+  <!-- ══ AGENT CONTAINER ══ -->
+  <text id="svg-lbl-container" x="30" y="280" font-size="10" font-weight="700" fill="#94a3b8" letter-spacing="1.5">AGENT CONTAINER</text>
+
+  <rect x="30" y="292" width="840" height="140" rx="14" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text id="svg-container-desc" x="450" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">🐳 Isolated per group · credential proxy :3001 · MCP tools injected</text>
+
+  <rect x="50" y="330" width="240" height="54" rx="10" fill="#dbeafe" stroke="#60a5fa"/>
+  <text x="170" y="353" text-anchor="middle" font-size="13" font-weight="700" fill="#1e40af">🤖 Claude</text>
+  <text id="svg-claude-sub" x="170" y="369" text-anchor="middle" font-size="9" fill="#2563eb">Claude Agent SDK · OAuth</text>
+  <rect x="330" y="330" width="240" height="54" rx="10" fill="rgba(239,246,255,0.7)" stroke="#bfdbfe"/>
+  <text id="svg-mcp-title" x="450" y="353" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">🔧 MCP Tools</text>
+  <text id="svg-mcp-sub" x="450" y="369" text-anchor="middle" font-size="9" fill="#60a5fa">Web · browser · schedule · send</text>
+  <rect x="610" y="330" width="240" height="54" rx="10" fill="rgba(239,246,255,0.7)" stroke="#bfdbfe"/>
+  <text id="svg-memory-title" x="730" y="353" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">🧠 Memory</text>
+  <text id="svg-memory-sub" x="730" y="369" text-anchor="middle" font-size="9" fill="#60a5fa">CLAUDE.md · conversations/</text>
+
+  <!-- Response arrow curving back — left side, back to input channels -->
+  <path d="M 170 384 C 20 440 10 260 30 80" stroke="#2563eb" stroke-width="1.5" fill="none" marker-end="url(#arr-b)" stroke-dasharray="5,3" opacity="0.45"/>
+  <text id="svg-reply-label" x="80" y="415" text-anchor="middle" font-size="9" fill="#2563eb" font-weight="600" opacity="0.6">↩ Reply flows back via channel</text>
+</svg>
+    </div>
+
+    <!-- === HOW IT WORKS === -->
     <div class="section-h1" id="flow-section">How It Works</div>
 
-    <!-- Step 1 -->
     <div class="section-label" id="step1">Step 1 — Message arrives</div>
     <div class="flow">
-      <div class="flow-step">
-        <div class="step-card blue">
-          <div class="step-header">
-            <span class="step-emoji">🔔</span>
-            <div class="step-title"><a href="#concept-webhook">New message</a></div>
-          </div>
-          <div class="step-tech">src/channels/lark.ts</div>
-          <div class="step-desc">A chat platform pings NanoClaw the instant someone sends a message — like a doorbell ringing the moment a visitor arrives. NanoClaw doesn't have to keep checking; it just waits and reacts.</div>
-          <div>
-            <span class="step-tag">webhook</span>
-            <span class="step-tag">POST /webhook</span>
-          </div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">📨</span>
+          <div class="step-title"><a href="#concept-channel">Lark</a></div>
         </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-card blue">
-          <div class="step-header">
-            <span class="step-emoji">🌐</span>
-            <div class="step-title"><a href="#concept-channel">Works with any platform</a></div>
-          </div>
-          <div class="step-tech">src/channels/registry.ts → registerChannel()</div>
-          <div class="step-desc">NanoClaw speaks every platform's language through adapters — like a universal translator. You can switch platforms without changing anything else about how NanoClaw works.</div>
-          <div>
-            <span class="step-tag">lark</span>
-            <span class="step-tag">telegram</span>
-          </div>
+        <div class="step-tech">src/channels/lark.ts</div>
+        <div class="step-desc">A message comes in from a Lark group chat. The channel adapter listens for new events and hands them to the core system.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">✈️</span>
+          <div class="step-title"><a href="#concept-channel">Telegram</a></div>
         </div>
-      </div>
+        <div class="step-tech">src/channels/telegram.ts</div>
+        <div class="step-desc">A message comes in from a Telegram bot. Same callback interface — the core never cares which platform it came from.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">💬</span>
+          <div class="step-title">Other channels</div>
+        </div>
+        <div class="step-tech">src/channels/registry.ts → registerChannel()</div>
+        <div class="step-desc">WhatsApp, Slack, Discord, and more can plug in. Any channel that registers itself at startup gets treated identically.</div>
+      </div></div>
     </div>
 
-    <!-- Step 2 -->
-    <div class="section-label" id="step2">Step 2 — Who's allowed in?</div>
+    <div class="section-label" id="step2">Step 2 — Stored &amp; checked</div>
     <div class="flow">
-      <div class="flow-step">
-        <div class="step-card yellow">
-          <div class="step-header">
-            <span class="step-emoji">🚦</span>
-            <div class="step-title">Trigger check</div>
-          </div>
-          <div class="step-tech">src/index.ts (trigger check)</div>
-          <div class="step-desc">Only messages that start with the right password get processed — everything else is quietly ignored. Like a bouncer at the door who only lets in people who say the right phrase.</div>
-          <div>
-            <span class="step-tag y">@Nano</span>
-            <span class="step-tag y">requiresTrigger</span>
-          </div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">🗄️</span>
+          <div class="step-title">Saved to database</div>
         </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-card yellow">
-          <div class="step-header">
-            <span class="step-emoji">🪪</span>
-            <div class="step-title">Sender check</div>
-          </div>
-          <div class="step-tech">src/sender-allowlist.ts → isSenderAllowed()</div>
-          <div class="step-desc">Checks whether the person who sent the message is on the approved list. Admins can restrict Nano to only respond to certain people, or block messages from unknown senders entirely.</div>
-          <div>
-            <span class="step-tag y">allowlist</span>
-            <span class="step-tag y">drop mode</span>
-          </div>
+        <div class="step-tech">src/db.ts → storeMessage()</div>
+        <div class="step-desc">Every message is written to a SQLite database immediately, even if the AI won't respond to it. This builds up conversation history that gives the AI context.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">🚪</span>
+          <div class="step-title">Sender &amp; trigger check</div>
         </div>
-      </div>
+        <div class="step-tech">src/sender-allowlist.ts → isTriggerAllowed()</div>
+        <div class="step-desc">The system checks two things: is this sender allowed to talk to the AI, and does the message contain the trigger phrase (like "@Nano")? Non-trigger messages accumulate as context but don't wake the AI.</div>
+      </div></div>
     </div>
 
-    <!-- Step 3 -->
-    <div class="section-label" id="step3">Step 3 — Line up &amp; wait your turn</div>
+    <div class="section-label" id="step3">Step 3 — Queue &amp; wait</div>
     <div class="flow">
-      <div class="flow-step">
-        <div class="step-card purple">
-          <div class="step-header">
-            <span class="step-emoji">🗂️</span>
-            <div class="step-title"><a href="#concept-queue">Queue</a></div>
-          </div>
-          <div class="step-tech">src/group-queue.ts → enqueueMessageCheck()</div>
-          <div class="step-desc">Each group chat gets its own waiting line — messages are handled one at a time so conversations never get jumbled together. Two different groups can be handled at the same time, but within a group, it's always orderly.</div>
-          <div>
-            <span class="step-tag p">GroupQueue</span>
-            <span class="step-tag p">per-group</span>
-          </div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">🚦</span>
+          <div class="step-title"><a href="#concept-queue">One lane per group</a></div>
         </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-card purple">
-          <div class="step-header">
-            <span class="step-emoji">💾</span>
-            <div class="step-title">Saved for context</div>
-          </div>
-          <div class="step-tech">src/db.ts → storeMessage()</div>
-          <div class="step-desc">Every message is stored so Nano can remember the full conversation history. This is how it knows what was said earlier and can give answers that make sense in context.</div>
-          <div>
-            <span class="step-tag p">SQLite</span>
-            <span class="step-tag p">messages table</span>
-          </div>
+        <div class="step-tech">src/group-queue.ts → GroupQueue.enqueueMessageCheck()</div>
+        <div class="step-desc">Each chat group has its own queue. If the AI is already busy replying to that group, the new message waits — they won't get served by two AI instances at once.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">📡</span>
+          <div class="step-title">Pipe to active container</div>
         </div>
-      </div>
+        <div class="step-tech">src/group-queue.ts → GroupQueue.sendMessage()</div>
+        <div class="step-desc">If the AI container is already running for this group, the new message is piped in through stdin — no need to start a new container. Saves time and cost.</div>
+      </div></div>
     </div>
 
-    <!-- Step 4 -->
-    <div class="section-label" id="step4">Step 4 — AI thinks it over</div>
+    <div class="section-label" id="step4">Step 4 — Agent container starts</div>
+    <div class="flow">
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">🎒</span>
+          <div class="step-title"><a href="#concept-container">Packed &amp; launched</a></div>
+        </div>
+        <div class="step-tech">src/container-runner.ts → runContainerAgent()</div>
+        <div class="step-desc">A fresh throwaway container is packed with the group's personal folder and a read-only view of the project. It's launched, used, and discarded — nothing leaks between runs.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">🔑</span>
+          <div class="step-title"><a href="#concept-proxy">Credentials injected</a></div>
+        </div>
+        <div class="step-tech">src/credential-proxy.ts → startCredentialProxy()</div>
+        <div class="step-desc">The container gets a fake API key. When it tries to call Claude, the traffic is intercepted by a local proxy that swaps in the real secret — the container itself never sees it.</div>
+      </div></div>
+    </div>
+
+    <!-- Container-isolated steps -->
     <div class="container-section">
-      <div class="container-badge">🔒 Isolated Docker Container</div>
+      <div class="container-badge">🔒 Inside the agent container</div>
       <div class="container-inner">
-        <div class="step-card green">
-          <div class="step-header">
-            <span class="step-emoji">📦</span>
-            <div class="step-title"><a href="#concept-docker">Fresh workspace</a></div>
+        <div class="step-card">
+          <div class="step-header"><span class="step-emoji">🤖</span>
+            <div class="step-title" id="step5-inner">AI reads the conversation</div>
           </div>
-          <div class="step-tech">src/container-runner.ts → runContainerAgent()</div>
-          <div class="step-desc">For each reply, NanoClaw spins up a clean, throwaway environment — like giving the AI a fresh notebook every time, completely sealed off from everything else. When it's done, the notebook is shredded.</div>
-          <div>
-            <span class="step-tag g">docker run --rm</span>
-            <span class="step-tag g">--network=host</span>
-          </div>
+          <div class="step-tech">container/agent-runner/src/index.ts</div>
+          <div class="step-desc">Claude reads all the pending messages, loads the group's memory file, and any relevant skills. It can browse the web, read files in its workspace, run bash commands.</div>
         </div>
-        <div class="step-card green">
-          <div class="step-header">
-            <span class="step-emoji">🔑</span>
-            <div class="step-title"><a href="#concept-credential-proxy">Secret keeper</a></div>
+        <div class="step-card">
+          <div class="step-header"><span class="step-emoji">📝</span>
+            <div class="step-title"><a href="#concept-ipc">Response written to IPC</a></div>
           </div>
-          <div class="step-tech">src/credential-proxy.ts</div>
-          <div class="step-desc">The AI only ever sees fake placeholder keys. A local middleman quietly swaps them for the real ones — so your actual secrets never leave your machine, even if the AI misbehaves.</div>
-          <div>
-            <span class="step-tag g">host.docker.internal:3001</span>
-            <span class="step-tag g">ANTHROPIC_BASE_URL</span>
-          </div>
-        </div>
-        <div class="step-card green">
-          <div class="step-header">
-            <span class="step-emoji">🧠</span>
-            <div class="step-title">Claude reasons &amp; acts</div>
-          </div>
-          <div class="step-tech">src/index.ts → runAgent()</div>
-          <div class="step-desc">Claude reads the full conversation, decides which tools to use — web search, running commands, reading files — and works through the problem step by step, like a smart assistant with a full toolbox.</div>
-          <div>
-            <span class="step-tag g">claude (latest)</span>
-            <span class="step-tag g">tools</span>
-          </div>
-        </div>
-        <div class="step-card green">
-          <div class="step-header">
-            <span class="step-emoji">🔧</span>
-            <div class="step-title"><a href="#concept-skills">Skills loaded</a></div>
-          </div>
-          <div class="step-tech">container/skills/ + groups/{name}/CLAUDE.md</div>
-          <div class="step-desc">Before thinking, Nano loads its instructions and any installed skills — like reading a briefing packet before a meeting. Each group can have its own custom set of instructions and capabilities.</div>
-          <div>
-            <span class="step-tag g">SKILL.md</span>
-            <span class="step-tag g">system prompt</span>
-          </div>
+          <div class="step-tech">container/agent-runner/src/index.ts → OUTPUT_START_MARKER</div>
+          <div class="step-desc">When done, Claude writes its reply to stdout using sentinel markers. The host process reads the stream and extracts the response.</div>
         </div>
       </div>
     </div>
 
-    <!-- Step 5 -->
-    <div class="section-label" id="step5">Step 5 — Reply goes back</div>
+    <div class="section-label" id="step5">Step 5 — AI thinks &amp; acts</div>
     <div class="flow">
-      <div class="flow-step">
-        <div class="step-card teal">
-          <div class="step-header">
-            <span class="step-emoji">📤</span>
-            <div class="step-title">Response sent</div>
-          </div>
-          <div class="step-tech">src/index.ts → channel.sendFiles()</div>
-          <div class="step-desc">The AI's reply — whether it's text, images, or files — is handed back to the same platform the message came from. You get the answer right where you asked.</div>
-          <div>
-            <span class="step-tag">.send_files.json</span>
-            <span class="step-tag">sendMessage()</span>
-          </div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">💭</span>
+          <div class="step-title">Output streamed back</div>
         </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-card teal">
-          <div class="step-header">
-            <span class="step-emoji">📎</span>
-            <div class="step-title">Files &amp; images</div>
-          </div>
-          <div class="step-tech">src/channels/lark.ts → sendFiles()</div>
-          <div class="step-desc">If the AI created an image or a file during its work, it uploads them to the platform and sends them as proper attachments — not just a wall of text with no download link.</div>
-          <div>
-            <span class="step-tag">image_key</span>
-            <span class="step-tag">file upload</span>
-          </div>
+        <div class="step-tech">src/index.ts → processGroupMessages()</div>
+        <div class="step-desc">As the AI produces results, they stream back in real time. The typing indicator stays on while the AI works, so the chat feels responsive.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">📎</span>
+          <div class="step-title">Files sent if needed</div>
         </div>
-      </div>
+        <div class="step-tech">src/index.ts → channel.sendFiles()</div>
+        <div class="step-desc">If the AI produced a file (a chart, a document, an image), it gets sent as an attachment via the same channel that received the original message.</div>
+      </div></div>
     </div>
 
-    <!-- Step 6 -->
-    <div class="section-label" id="step6">Step 6 — Scheduled tasks</div>
+    <div class="section-label" id="step6">Step 6 — Reply sent back</div>
     <div class="flow">
-      <div class="flow-step">
-        <div class="step-card orange">
-          <div class="step-header">
-            <span class="step-emoji">⏰</span>
-            <div class="step-title">Runs on a schedule</div>
-          </div>
-          <div class="step-tech">src/task-scheduler.ts → getDueTasks()</div>
-          <div class="step-desc">Nano can run tasks automatically at set times — daily reminders, weekly reports, or anything you've scheduled in advance. Like a programmable alarm clock that triggers a full AI response when it goes off.</div>
-          <div>
-            <span class="step-tag y">cron</span>
-            <span class="step-tag y">scheduled_tasks</span>
-          </div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">✅</span>
+          <div class="step-title">Reply delivered</div>
         </div>
-      </div>
-      <div class="flow-step">
-        <div class="step-card orange">
-          <div class="step-header">
-            <span class="step-emoji">📬</span>
-            <div class="step-title"><a href="#concept-ipc">Cross-group messages</a></div>
-          </div>
-          <div class="step-tech">src/ipc.ts (polls every 1s)</div>
-          <div class="step-desc">Groups and AI containers can send messages to each other by dropping small notes in a shared folder — like a mail slot between rooms. No direct connection needed; just write a note and walk away.</div>
-          <div>
-            <span class="step-tag y">ipc/messages/</span>
-            <span class="step-tag y">ipc/tasks/</span>
-          </div>
+        <div class="step-tech">src/router.ts → findChannel() → channel.sendMessage()</div>
+        <div class="step-desc">The reply goes back through the same channel it came in on. The router matches the group ID to the right channel — Lark replies go to Lark, Telegram to Telegram.</div>
+      </div></div>
+      <div class="flow-step"><div class="step-card">
+        <div class="step-header"><span class="step-emoji">📌</span>
+          <div class="step-title">Cursor advanced</div>
         </div>
-      </div>
+        <div class="step-tech">src/index.ts → saveState()</div>
+        <div class="step-desc">After a successful reply, a bookmark is saved so the AI won't re-process the same messages on restart. If there was an error before a reply was sent, the bookmark stays put so the message gets retried.</div>
+      </div></div>
     </div>
 
-    <hr>
 
-    <!-- Concepts -->
+
+    <!-- === KEY CONCEPTS === -->
     <div class="section-h1" id="concepts-section">Key Concepts</div>
 
-    <!-- Webhook -->
-    <div class="concept" id="concept-webhook">
+    <div id="concept-channel" class="concept">
       <div class="concept-header" onclick="toggle(this)">
-        <span class="concept-icon">🔔</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Webhook</div>
-        </div>
-        <span class="concept-toggle">▾</span>
+        <span class="concept-icon">🔌</span>
+        <div><div class="concept-title">Channel abstraction</div></div>
+        <span class="concept-toggle">&#9662;</span>
       </div>
-      <div class="collapsible-body expanded">
-        <div class="concept-body">
-          <div class="analogy">Like a doorbell — instead of NanoClaw constantly knocking on Lark's door asking "any new messages?", Lark rings NanoClaw the moment something arrives.</div>
-          <p>Webhooks are how the outside world notifies NanoClaw. Chat platforms send an HTTP POST request to NanoClaw's URL whenever someone sends a message. No polling, no delay — instant push delivery.</p>
-          <ul>
-            <li><strong>Instant delivery</strong> — NanoClaw is notified the moment a message is sent, not on a timer</li>
-            <li><strong>Platform-agnostic</strong> — every platform (Lark, WhatsApp, Telegram) uses the same webhook concept</li>
-            <li><strong>Verification</strong> — platforms include a secret token so NanoClaw can confirm the sender is legit</li>
-          </ul>
-          <div class="tech-box">POST https://your-server.com/webhook/lark → lark.ts handleWebhook()</div>
-        </div>
-      </div>
+      <div class="collapsible-body expanded"><div class="concept-body">
+        <div class="analogy">Like a universal power adapter — same laptop, different plugs for every country. The core system only knows how to talk to "a channel", and each country (platform) provides its own plug.</div>
+        <p>NanoClaw supports multiple messaging platforms without its core logic knowing anything about any of them. Each channel self-registers at startup by calling <code>registerChannel()</code>, and the registry hands out factories when needed.</p>
+        <ul>
+          <li><strong>Self-registration</strong> — Channels register themselves at startup by importing and calling <code>registerChannel()</code>; the core never lists platforms explicitly</li>
+          <li><strong>JID-based routing</strong> — Each chat has a unique JID (e.g. <code>120363@g.us</code> for WhatsApp, <code>lark:oc_...</code> for Lark); <code>ownsJid()</code> is how the right channel is found for a reply</li>
+        </ul>
+        <div class="tech-box">// src/channels/registry.ts
+registerChannel(name: string, factory: ChannelFactory): void
+getChannelFactory(name: string): ChannelFactory | undefined
+getRegisteredChannelNames(): string[]</div>
+      </div></div>
     </div>
 
-    <!-- Docker -->
-    <div class="concept" id="concept-docker">
+    <div id="concept-queue" class="concept">
       <div class="concept-header" onclick="toggle(this)">
-        <span class="concept-icon">🐳</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Docker (Isolated Containers)</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+        <span class="concept-icon">🚦</span>
+        <div><div class="concept-title">Per-group queue</div></div>
+        <span class="concept-toggle">&#9662;</span>
       </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like a disposable lunchbox — packed fresh for every meal, used once, then thrown away. Nothing from one meal contaminates the next.</div>
-          <p>Every time NanoClaw needs the AI to work on a reply, it creates a fresh isolated environment — a "container". When it's done, the container disappears. This means one conversation can never accidentally affect another, and nothing the AI does can permanently change the host machine.</p>
-          <ul>
-            <li><strong>Isolated</strong> — each conversation runs in its own bubble; no shared state</li>
-            <li><strong>Throwaway</strong> — containers are deleted after use (<code>--rm</code> flag)</li>
-            <li><strong>Safe</strong> — even if the AI runs bad code, it's contained</li>
-          </ul>
-          <div class="tech-box">docker run --rm ... nanoclaw-agent:latest</div>
-        </div>
-      </div>
+      <div class="collapsible-body collapsed"><div class="concept-body">
+        <div class="analogy">Like a single checkout lane per customer — no two cashiers serve the same person at once. Every chat group gets its own lane, and messages wait in line within it.</div>
+        <p>Without a queue, two messages arriving quickly from the same group could spawn two containers simultaneously, leading to duplicate replies and race conditions. The <code>GroupQueue</code> ensures only one container runs per group at a time.</p>
+        <ul>
+          <li><strong>Stdin piping</strong> — If a container is already running when a new message arrives, the message is piped in via stdin rather than spawning a new container</li>
+          <li><strong>Idle timeout</strong> — Containers stay alive for 30 minutes of inactivity, then stdin is closed — the next message will cold-start a fresh container</li>
+          <li><strong>Global cap</strong> — <code>MAX_CONCURRENT_CONTAINERS</code> limits total parallel containers across all groups, not just per-group</li>
+        </ul>
+        <div class="tech-box">// src/group-queue.ts
+GroupQueue.enqueueMessageCheck(groupJid: string): void
+GroupQueue.sendMessage(groupJid: string, text: string): boolean
+GroupQueue.notifyIdle(groupJid: string): void
+GroupQueue.closeStdin(groupJid: string): void</div>
+      </div></div>
     </div>
 
-    <!-- Credential Proxy -->
-    <div class="concept" id="concept-credential-proxy">
+    <div id="concept-container" class="concept">
+      <div class="concept-header" onclick="toggle(this)">
+        <span class="concept-icon">📦</span>
+        <div><div class="concept-title">Container isolation</div></div>
+        <span class="concept-toggle">&#9662;</span>
+      </div>
+      <div class="collapsible-body collapsed"><div class="concept-body">
+        <div class="analogy">Like a disposable lunchbox — packed fresh for each meal, used once, then thrown away. What's in one box never touches another box, and nothing lingers.</div>
+        <p>Every agent run gets a throwaway Linux VM. When the agent finishes (or times out), the container is deleted. This means a misbehaving agent can't read other groups' files, and any mess it makes is cleaned up automatically.</p>
+        <ul>
+          <li><strong>Selective mounts</strong> — Group folder is read-write; project root is read-only; the agent can't write outside its group directory</li>
+          <li><strong>Mount security</strong> — Custom mounts defined by a group are validated to prevent path traversal attacks</li>
+          <li><strong>Runtime abstraction</strong> — Works with Docker or Apple Container; swap via <code>CONTAINER_RUNTIME_BIN</code> env var</li>
+        </ul>
+        <div class="tech-box">// src/container-runner.ts
+runContainerAgent(group, input, onRegister, onOutput): Promise&lt;ContainerOutput&gt;
+
+// Mounts:
+// /workspace/group     → groups/{folder}/  (read-write)
+// /workspace/project   → project root      (read-only)
+// /workspace/ipc       → data/ipc/{folder} (read-write)</div>
+      </div></div>
+    </div>
+
+    <div id="concept-proxy" class="concept">
       <div class="concept-header" onclick="toggle(this)">
         <span class="concept-icon">🔑</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Credential Proxy</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+        <div><div class="concept-title">Credential proxy</div></div>
+        <span class="concept-toggle">&#9662;</span>
       </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like a hotel concierge — guests can request things that need the master key (unlocking a room, accessing storage), but they never touch the key themselves.</div>
-          <p>The AI container only has fake placeholder API keys. When it makes an API call, a small "proxy" running on the host intercepts it and swaps in the real keys before forwarding. This way, even if the AI were somehow compromised, your real credentials stay safe on the host — the container never sees them.</p>
-          <ul>
-            <li><strong>Zero exposure</strong> — containers hold fake keys like <code>sk-placeholder</code></li>
-            <li><strong>Transparent</strong> — the AI doesn't know the swap happens; it just works</li>
-            <li><strong>Host-only</strong> — real keys only ever live on your machine</li>
-          </ul>
-          <div class="tech-box">ANTHROPIC_BASE_URL=http://host.docker.internal:3001
-# containers can't use "localhost" — host.docker.internal
-# is Docker's special hostname that points back to your Mac
-# credential-proxy.ts listens on port 3001 and swaps in real keys</div>
-        </div>
-      </div>
+      <div class="collapsible-body collapsed"><div class="concept-body">
+        <div class="analogy">Like a hotel concierge with the master key — you make a request, and the concierge uses the master key on your behalf. You never touch the key yourself.</div>
+        <p>Containers receive a placeholder <code>ANTHROPIC_API_KEY</code> and their <code>ANTHROPIC_BASE_URL</code> points to <code>localhost:3001</code> instead of Anthropic's servers. The proxy intercepts every request and injects real credentials before forwarding.</p>
+        <ul>
+          <li><strong>Two auth modes</strong> — API key mode (injects <code>x-api-key</code> header) or OAuth mode (intercepts the CLI's token exchange request)</li>
+          <li><strong>Keychain integration</strong> — OAuth tokens are read from macOS Keychain via <code>security find-generic-password</code></li>
+          <li><strong>Token refresh</strong> — Refreshes OAuth tokens automatically when less than 1 hour remains</li>
+          <li><strong>Bind address</strong> — On Linux, binds to the container's host gateway IP so containers can reach it; on macOS it binds to <code>0.0.0.0</code></li>
+        </ul>
+        <div class="tech-box">// src/credential-proxy.ts
+startCredentialProxy(port: number, bindHost: string): Promise&lt;Server&gt;
+detectAuthMode(): AuthMode  // 'api-key' | 'oauth'
+
+// Container env vars:
+// ANTHROPIC_BASE_URL=http://host-gateway:3001
+// ANTHROPIC_API_KEY=placeholder</div>
+      </div></div>
     </div>
 
-    <!-- Queue -->
-    <div class="concept" id="concept-queue">
-      <div class="concept-header" onclick="toggle(this)">
-        <span class="concept-icon">🗂️</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Per-Group Message Queue</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
-      </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like a single checkout lane per customer at a store — a second customer can be helped at the next lane, but you never have two clerks bumping into each other serving the same person.</div>
-          <p>Each group chat has its own queue. Messages wait in line and are processed one at a time per group. This prevents chaos — if two people message at the same moment, their replies won't get mixed up. But two different groups are handled in parallel with no waiting.</p>
-          <ul>
-            <li><strong>Ordered</strong> — messages in a group are always handled in order</li>
-            <li><strong>Per-group</strong> — groups don't block each other</li>
-            <li><strong>Backpressure</strong> — if a response takes a while, new messages for that group wait nicely</li>
-          </ul>
-          <div class="tech-box">GroupQueue.enqueue(groupId, async () => runAgent(...))</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- IPC -->
-    <div class="concept" id="concept-ipc">
+    <div id="concept-ipc" class="concept">
       <div class="concept-header" onclick="toggle(this)">
         <span class="concept-icon">📬</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">File-Based IPC (Inter-Process Communication)</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+        <div><div class="concept-title">File-based IPC</div></div>
+        <span class="concept-toggle">&#9662;</span>
       </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like a mail slot in a door — one side drops a note through, the other side picks it up and acts on it. No direct connection needed.</div>
-          <p>The AI container and the host can't talk directly (they're isolated). Instead, they communicate by writing small JSON files to a shared folder. The host watches the folder and picks up any new files. This is how the AI can schedule tasks, send messages to other groups, or trigger actions on the host.</p>
-          <ul>
-            <li><strong>Simple &amp; reliable</strong> — just files; no sockets, no ports to manage</li>
-            <li><strong>Decoupled</strong> — sender and receiver don't need to be running at the same time</li>
-            <li><strong>Auditable</strong> — you can inspect the files to see what was requested</li>
-          </ul>
-          <div class="tech-box">// AI writes:
-{"type": "message", "chatJid": "...", "text": "Hello"}
-→ /workspace/ipc/messages/msg_123.json
-// Host picks it up via fs.watch()</div>
-        </div>
-      </div>
+      <div class="collapsible-body collapsed"><div class="concept-body">
+        <div class="analogy">Like a mail slot between two rooms — the agent drops a note through the slot, and the host picks it up and acts on it. No direct connection needed between them.</div>
+        <p>Containers can't call back to the host directly, but they can write JSON files to their IPC directory, which the host polls every second. This lets agents trigger actions like sending a message to a different group, registering a new group, or scheduling a task.</p>
+        <ul>
+          <li><strong>Outbound messages</strong> — Agents write to <code>ipc/messages/</code> to send a message to any registered group, not just their own</li>
+          <li><strong>Task scheduling</strong> — Agents write to <code>ipc/tasks/</code> to schedule future tasks — this is how the AI can set its own reminders</li>
+          <li><strong>Group registration</strong> — Agents can register entirely new groups by writing registration JSON files</li>
+        </ul>
+        <div class="tech-box">// src/ipc.ts
+startIpcWatcher(deps: IpcDeps): void
+// Polls: data/ipc/{folder}/tasks/*.json
+// Message format: { type: 'message', chatJid: '...', text: '...' }</div>
+      </div></div>
     </div>
 
-    <!-- Channel Abstraction -->
-    <div class="concept" id="concept-channel">
+    <div id="concept-scheduler" class="concept">
       <div class="concept-header" onclick="toggle(this)">
-        <span class="concept-icon">🌐</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Channel Abstraction</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
+        <span class="concept-icon">⏰</span>
+        <div><div class="concept-title">Task scheduler</div></div>
+        <span class="concept-toggle">&#9662;</span>
       </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like a universal power adapter — your laptop works in any country because the adapter handles the different plug shapes. NanoClaw works on any chat platform for the same reason.</div>
-          <p>Every chat platform works differently — Lark has its own API, Telegram has another, WhatsApp yet another. NanoClaw defines a single common interface ("channel") and then writes a thin adapter for each platform. The core system only talks to the common interface and never cares which platform it's actually on.</p>
-          <ul>
-            <li><strong>Pluggable</strong> — add a new platform by writing one adapter file</li>
-            <li><strong>Consistent</strong> — the core always calls the same <code>send()</code>, <code>sendFiles()</code> methods</li>
-            <li><strong>Independent</strong> — Lark bugs don't affect Telegram; each adapter is self-contained</li>
-          </ul>
-          <div class="tech-box">// src/types.ts
-interface Channel {
-  sendMessage(jid: string, text: string): Promise&lt;void&gt;;
-  sendFiles?(jid, attachments, groupFolder): Promise&lt;void&gt;;  // optional
-  connect(): Promise&lt;void&gt;;
-  isConnected(): boolean;
-}</div>
-        </div>
-      </div>
+      <div class="collapsible-body collapsed"><div class="concept-body">
+        <div class="analogy">Like a programmable alarm clock that can do anything when it rings — not just beep, but run a full AI conversation on your behalf at 9am every weekday.</div>
+        <p>The scheduler runs a loop every 60 seconds, checking the database for tasks whose next-run time has passed. It fires them by spawning the same container pipeline as a normal message, so scheduled tasks have full AI capabilities.</p>
+        <ul>
+          <li><strong>Persisted in SQLite</strong> — Tasks survive process restarts; <code>next_run</code> is recomputed from the cron expression on each poll</li>
+          <li><strong>60-second resolution</strong> — Tasks fire within one minute of their scheduled time, not exactly on the second</li>
+        </ul>
+        <div class="tech-box">// src/task-scheduler.ts
+startSchedulerLoop(deps: SchedulerDependencies): void
+computeNextRun(task: ScheduledTask): string | null
+
+// Task schema (SQLite):
+// id, group_folder, prompt, schedule_type, schedule_value, next_run, status</div>
+      </div></div>
     </div>
 
-    <!-- Skills -->
-    <div class="concept" id="concept-skills">
-      <div class="concept-header" onclick="toggle(this)">
-        <span class="concept-icon">🧩</span>
-        <div>
-          <div class="concept-label">Concept</div>
-          <div class="concept-title">Skills (Plugin System)</div>
-        </div>
-        <span class="concept-toggle" style="transform: rotate(-90deg)">▾</span>
-      </div>
-      <div class="collapsible-body collapsed">
-        <div class="concept-body">
-          <div class="analogy">Like an app store for your AI — install a skill and new superpowers appear. Uninstall it and they vanish, without touching anything else.</div>
-          <p>Skills are Markdown files that give Nano new capabilities. When a skill is installed, its instructions are injected into the AI's briefing before it starts thinking. The AI reads the skill and knows how to do new things — browse the web in a special way, generate documents, manage a specific workflow — without any code changes.</p>
-          <ul>
-            <li><strong>Zero-code</strong> — skills are plain Markdown files, not code</li>
-            <li><strong>Per-group</strong> — different groups can have different skills installed</li>
-            <li><strong>Composable</strong> — install multiple skills; they stack</li>
-          </ul>
-          <div class="tech-box">container/skills/explain-codebase/SKILL.md  →  injected into system prompt
-groups/main/CLAUDE.md  →  group-specific instructions</div>
-        </div>
-      </div>
-    </div>
 
-    <hr>
 
-    <!-- Reference -->
-    <div class="section-h1" id="reference">Key Files &amp; Directories</div>
+    <!-- === KEY FILES === -->
+    <div class="section-h1" id="reference">Key Files</div>
     <div class="ref-grid">
       <div class="ref-card">
-        <div class="ref-title">🚀 Entry Point</div>
+        <div class="ref-title">🎛️ Orchestrator</div>
         <div class="ref-file">src/index.ts</div>
-        <div class="ref-desc">Starts everything: registers channel adapters, wires up the scheduler, and listens for incoming webhooks.</div>
+        <div class="ref-desc">The main event loop. Polls for new messages, checks triggers, drives the queue, coordinates all subsystems on startup.</div>
       </div>
       <div class="ref-card">
-        <div class="ref-title">🔔 Channel Adapters</div>
-        <div class="ref-file">src/channels/lark.ts, telegram.ts</div>
-        <div class="ref-desc">One file per platform — each knows how to receive messages and send replies for its platform.</div>
+        <div class="ref-title">🔌 Channel registry</div>
+        <div class="ref-file">src/channels/registry.ts</div>
+        <div class="ref-desc">Minimal plugin registry. Channels call <code>registerChannel()</code> at import time; the orchestrator iterates whatever registered itself.</div>
       </div>
       <div class="ref-card">
-        <div class="ref-title">🗂️ Message Queue</div>
-        <div class="ref-file">src/group-queue.ts</div>
-        <div class="ref-desc">Keeps per-group queues so messages are handled one at a time per conversation.</div>
-      </div>
-      <div class="ref-card">
-        <div class="ref-title">🤖 Container Runner</div>
+        <div class="ref-title">📦 Container runner</div>
         <div class="ref-file">src/container-runner.ts</div>
-        <div class="ref-desc">Spawns Docker containers, injects credentials, runs Claude, collects replies via <code>runContainerAgent()</code>.</div>
+        <div class="ref-desc">Spawns agent containers with the right mounts, credentials, and IPC directories. Parses streamed output using sentinel markers.</div>
       </div>
       <div class="ref-card">
-        <div class="ref-title">🔑 Credential Proxy</div>
+        <div class="ref-title">🔑 Credential proxy</div>
         <div class="ref-file">src/credential-proxy.ts</div>
-        <div class="ref-desc">HTTP proxy on port 3001 — containers reach it via <code>host.docker.internal:3001</code> and it swaps fake keys for real ones transparently.</div>
+        <div class="ref-desc">HTTP proxy on port 3001. Intercepts container API calls and injects real credentials. Handles both API key and OAuth auth modes.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🚦 Group queue</div>
+        <div class="ref-file">src/group-queue.ts</div>
+        <div class="ref-desc">Per-JID serialization of agent runs. Prevents duplicate containers, pipes new messages to running containers, enforces global concurrency limit.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">📬 IPC watcher</div>
+        <div class="ref-file">src/ipc.ts</div>
+        <div class="ref-desc">Polls the IPC directories every second. Processes task files written by containers — sending messages, scheduling tasks, registering groups.</div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-title">🗄️ Database</div>
+        <div class="ref-file">src/db.ts</div>
+        <div class="ref-desc">SQLite via better-sqlite3. Stores messages, sessions, registered groups, router state, and scheduled tasks. All reads/writes are synchronous.</div>
       </div>
       <div class="ref-card">
         <div class="ref-title">⏰ Scheduler</div>
         <div class="ref-file">src/task-scheduler.ts</div>
-        <div class="ref-desc">Checks the database every 60s for due tasks and fires them as full agent runs.</div>
+        <div class="ref-desc">60-second loop that fires due tasks. Supports cron expressions (via cron-parser) and one-shot timestamps.</div>
       </div>
       <div class="ref-card">
-        <div class="ref-title">🗄️ Database</div>
-        <div class="ref-file">src/store/ (SQLite)</div>
-        <div class="ref-desc">Stores messages, registered groups, scheduled tasks, and conversation history.</div>
+        <div class="ref-title">🤖 Agent runner</div>
+        <div class="ref-file">container/agent-runner/src/index.ts</div>
+        <div class="ref-desc">Runs inside the container. Invokes the Claude CLI with the conversation prompt, streams results back with sentinel markers, sends files via <code>.send_files.json</code>.</div>
       </div>
       <div class="ref-card">
-        <div class="ref-title">📬 IPC Directory</div>
-        <div class="ref-file">/workspace/ipc/</div>
-        <div class="ref-desc">Shared folder between host and containers. <code style="font-size:0.72rem;color:#2563eb;background:#eff6ff;padding:1px 4px;border-radius:3px;">messages/</code> for outbound, <code style="font-size:0.72rem;color:#2563eb;background:#eff6ff;padding:1px 4px;border-radius:3px;">tasks/</code> for scheduling.</div>
-      </div>
-      <div class="ref-card">
-        <div class="ref-title">🧠 Group Memory</div>
-        <div class="ref-file">groups/{name}/CLAUDE.md</div>
-        <div class="ref-desc">Per-group instructions and memory. Each group gets a private persistent context.</div>
-      </div>
-      <div class="ref-card">
-        <div class="ref-title">🧩 Skills</div>
-        <div class="ref-file">container/skills/</div>
-        <div class="ref-desc">Installed skills. Each is a Markdown file synced into the agent container and injected into the system prompt.</div>
+        <div class="ref-title">📁 Group folders</div>
+        <div class="ref-file">groups/{name}/</div>
+        <div class="ref-desc">Each registered group gets an isolated directory mounted into its container. Contains CLAUDE.md (memory), logs, and any files the agent creates.</div>
       </div>
     </div>
 
+  </div>
   </main>
 </div>
 
 <script>
+function getPreferredTheme() {
+  var stored = localStorage.getItem('arch-doc-theme');
+  if (stored) return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('arch-doc-theme', theme);
+}
+function updateToggleIcon() {
+  var thumb = document.querySelector('.toggle-thumb');
+  if (thumb) thumb.textContent = (document.documentElement.getAttribute('data-theme') === 'dark') ? '🌙' : '☀️';
+}
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+  updateToggleIcon();
+}
+applyTheme(getPreferredTheme());
+updateToggleIcon();
+
 function toggle(header) {
-  const body = header.parentElement.querySelector('.collapsible-body');
-  const arrow = header.querySelector('.concept-toggle');
+  var body = header.parentElement.querySelector('.collapsible-body');
+  var arrow = header.querySelector('.concept-toggle');
   if (body.classList.contains('expanded')) {
     body.classList.replace('expanded','collapsed');
     arrow.style.transform = 'rotate(-90deg)';
@@ -709,40 +646,289 @@ function toggle(header) {
   }
 }
 function scrollToId(id) {
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   if (!el) return;
-  const body = el.querySelector('.collapsible-body');
+  var body = el.querySelector('.collapsible-body');
   if (body && body.classList.contains('collapsed')) {
     body.classList.replace('collapsed','expanded');
-    const arrow = el.querySelector('.concept-toggle');
+    var arrow = el.querySelector('.concept-toggle');
     if (arrow) arrow.style.transform = '';
   }
-  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  setTimeout(function() { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
 }
-const sectionIds = Array.from(document.querySelectorAll('[id]'))
-  .filter(el => el.classList.contains('section-label') || el.classList.contains('concept'))
-  .map(el => el.id).filter(Boolean);
-const tocLinks = document.querySelectorAll('.toc-item');
+var sectionIds = Array.from(document.querySelectorAll('[id]'))
+  .filter(function(el) { return el.classList.contains('section-label') || el.classList.contains('section-h1') || el.classList.contains('concept'); })
+  .map(function(el) { return el.id; }).filter(Boolean);
 function updateToc() {
-  let current = sectionIds[0];
-  for (const id of sectionIds) {
-    const el = document.getElementById(id);
-    if (el && el.getBoundingClientRect().top <= 60) current = id;
+  var current = sectionIds[0];
+  for (var i = 0; i < sectionIds.length; i++) {
+    var el = document.getElementById(sectionIds[i]);
+    if (el && el.getBoundingClientRect().top <= 60) current = sectionIds[i];
   }
-  tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current));
+  document.querySelectorAll('.toc-item').forEach(function(a) {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
 }
 window.addEventListener('scroll', updateToc, { passive: true });
 updateToc();
-document.querySelectorAll('.toc-item, a.toc-group-label, .sidebar-brand .logo').forEach(a => {
-  a.addEventListener('click', e => {
-    const href = a.getAttribute('href');
+document.querySelectorAll('.toc-item, a.toc-group-label, .sidebar-brand .logo').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    var href = a.getAttribute('href');
     if (!href || href === '#') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     e.preventDefault(); scrollToId(href.slice(1));
   });
 });
-document.querySelectorAll('.step-title a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => { e.preventDefault(); scrollToId(a.getAttribute('href').slice(1)); });
-});
+function attachStepTitleLinks() {
+  document.querySelectorAll('.step-title a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) { e.preventDefault(); scrollToId(a.getAttribute('href').slice(1)); });
+  });
+}
+attachStepTitleLinks();
+
+// ── i18n ──────────────────────────────────────────────────────────────────────
+var T = {
+en: {
+  'page-title':'NanoClaw Architecture','tagline':'Architecture Guide','h1':'NanoClaw Architecture',
+  'subtitle':'A personal Claude assistant \u2014 messages arrive from any chat platform, get routed to an isolated AI container, and replies flow back. Single Node.js process, multiple messaging platforms, zero secrets in containers.',
+  'toc-overview':'Overview',
+  'toc-how-it-works':'How It Works',
+  'toc-step1':'<span class="toc-num">1</span> Message arrives',
+  'toc-step2':'<span class="toc-num">2</span> Stored &amp; checked',
+  'toc-step3':'<span class="toc-num">3</span> Queue &amp; wait',
+  'toc-step4':'<span class="toc-num">4</span> Agent container starts',
+  'toc-step5':'<span class="toc-num">5</span> AI thinks &amp; acts',
+  'toc-step6':'<span class="toc-num">6</span> Reply sent back',
+  'toc-concepts':'Key Concepts',
+  'toc-channel':'<span class="toc-icon">🔌</span> Channel abstraction',
+  'toc-queue':'<span class="toc-icon">🚦</span> Per-group queue',
+  'toc-container':'<span class="toc-icon">📦</span> Container isolation',
+  'toc-proxy':'<span class="toc-icon">🔑</span> Credential proxy',
+  'toc-ipc':'<span class="toc-icon">📬</span> File-based IPC',
+  'toc-scheduler':'<span class="toc-icon">⏰</span> Task scheduler',
+  'toc-files':'Key Files',
+  'section-flow':'How It Works',
+  'step1-label':'Step 1 \u2014 Message arrives',
+  'step2-label':'Step 2 \u2014 Stored &amp; checked',
+  'step3-label':'Step 3 \u2014 Queue &amp; wait',
+  'step4-label':'Step 4 \u2014 Agent container starts',
+  'step5-label':'Step 5 \u2014 AI thinks &amp; acts',
+  'step6-label':'Step 6 \u2014 Reply sent back',
+  's1c1-title':'<a href="#concept-channel">Lark</a>','s1c1-desc':'A message comes in from a Lark group chat. The channel adapter listens for new events and hands them to the core system.',
+  's1c2-title':'<a href="#concept-channel">Telegram</a>','s1c2-desc':'A message comes in from a Telegram bot. Same callback interface \u2014 the core never cares which platform it came from.',
+  's1c3-title':'Other channels','s1c3-desc':'WhatsApp, Slack, Discord, and more can plug in. Any channel that registers itself at startup gets treated identically.',
+  's2c1-title':'Saved to database','s2c1-desc':'Every message is written to a SQLite database immediately, even if the AI won\'t respond to it. This builds up conversation history that gives the AI context.',
+  's2c2-title':'Sender &amp; trigger check','s2c2-desc':'The system checks two things: is this sender allowed to talk to the AI, and does the message contain the trigger phrase (like \u201c@Nano\u201d)? Non-trigger messages accumulate as context but don\'t wake the AI.',
+  's3c1-title':'<a href="#concept-queue">One lane per group</a>','s3c1-desc':'Each chat group has its own queue. If the AI is already busy replying to that group, the new message waits \u2014 they won\'t get served by two AI instances at once.',
+  's3c2-title':'Pipe to active container','s3c2-desc':'If the AI container is already running for this group, the new message is piped in through stdin \u2014 no need to start a new container. Saves time and cost.',
+  's4c1-title':'<a href="#concept-container">Packed &amp; launched</a>','s4c1-desc':'A fresh throwaway container is packed with the group\'s personal folder and a read-only view of the project. It\'s launched, used, and discarded \u2014 nothing leaks between runs.',
+  's4c2-title':'<a href="#concept-proxy">Credentials injected</a>','s4c2-desc':'The container gets a fake API key. When it tries to call Claude, the traffic is intercepted by a local proxy that swaps in the real secret \u2014 the container itself never sees it.',
+  'container-badge':'🔒 Inside the agent container',
+  'cc1-title':'AI reads the conversation','cc1-desc':'Claude reads all the pending messages, loads the group\'s memory file, and any relevant skills. It can browse the web, read files in its workspace, run bash commands.',
+  'cc2-title':'<a href="#concept-ipc">Response written to IPC</a>','cc2-desc':'When done, Claude writes its reply to stdout using sentinel markers. The host process reads the stream and extracts the response.',
+  's5c1-title':'Output streamed back','s5c1-desc':'As the AI produces results, they stream back in real time. The typing indicator stays on while the AI works, so the chat feels responsive.',
+  's5c2-title':'Files sent if needed','s5c2-desc':'If the AI produced a file (a chart, a document, an image), it gets sent as an attachment via the same channel that received the original message.',
+  's6c1-title':'Reply delivered','s6c1-desc':'The reply goes back through the same channel it came in on. The router matches the group ID to the right channel \u2014 Lark replies go to Lark, Telegram to Telegram.',
+  's6c2-title':'Cursor advanced','s6c2-desc':'After a successful reply, a bookmark is saved so the AI won\'t re-process the same messages on restart. If there was an error before a reply was sent, the bookmark stays put so the message gets retried.',
+  'section-concepts':'Key Concepts',
+  'concept-channel-title':'Channel abstraction',
+  'concept-queue-title':'Per-group queue',
+  'concept-container-title':'Container isolation',
+  'concept-proxy-title':'Credential proxy',
+  'concept-ipc-title':'File-based IPC',
+  'concept-scheduler-title':'Task scheduler',
+  'concept-channel-body':'<div class="analogy">Like a universal power adapter \u2014 same laptop, different plugs for every country. The core system only knows how to talk to \u201ca channel\u201d, and each country (platform) provides its own plug.</div><p>NanoClaw supports multiple messaging platforms without its core logic knowing anything about any of them. Each channel self-registers at startup by calling <code>registerChannel()</code>, and the registry hands out factories when needed.</p><ul><li><strong>Self-registration</strong> \u2014 Channels register themselves at startup; the orchestrator just iterates what\'s registered</li><li><strong>Shared interface</strong> \u2014 Every channel implements <code>connect()</code>, <code>sendMessage()</code>, <code>ownsJid()</code>, and optionally <code>sendFiles()</code>, <code>setTyping()</code></li><li><strong>JID-based routing</strong> \u2014 Each chat has a unique JID (e.g. <code>120363@g.us</code> for WhatsApp, <code>lark:oc_...</code> for Lark); <code>ownsJid()</code> is how the right channel is found for a reply</li></ul><div class="tech-box">// src/channels/registry.ts\nregisterChannel(name: string, factory: ChannelFactory): void\ngetChannelFactory(name: string): ChannelFactory | undefined\ngetRegisteredChannelNames(): string[]</div>',
+  'concept-queue-body':'<div class="analogy">Like a single checkout lane per customer \u2014 no two cashiers serve the same person at once. Every chat group gets its own lane, and messages wait in line within it.</div><p>Without a queue, two messages arriving quickly from the same group could spawn two containers simultaneously, leading to duplicate replies and race conditions. The <code>GroupQueue</code> ensures only one container runs per group at a time.</p><ul><li><strong>Per-JID state</strong> \u2014 Each group gets an independent <code>GroupState</code> with its own active flag, pending task list, and process reference</li><li><strong>Stdin piping</strong> \u2014 If a container is already running when a new message arrives, it\'s piped in via <code>sendMessage()</code> rather than starting a new container</li><li><strong>Idle timeout</strong> \u2014 Containers stay alive for 30 minutes of inactivity (configurable via <code>IDLE_TIMEOUT</code>), then stdin is closed via <code>closeStdin()</code></li><li><strong>Global cap</strong> \u2014 <code>MAX_CONCURRENT_CONTAINERS</code> limits total parallel containers across all groups</li></ul><div class="tech-box">// src/group-queue.ts\nGroupQueue.enqueueMessageCheck(groupJid: string): void\nGroupQueue.sendMessage(groupJid: string, text: string): boolean\nGroupQueue.notifyIdle(groupJid: string): void\nGroupQueue.closeStdin(groupJid: string): void</div>',
+  'concept-container-body':'<div class="analogy">Like a disposable lunchbox \u2014 packed fresh for each meal, used once, then thrown away. What\'s in one box never touches another box, and nothing lingers.</div><p>Every agent run gets a throwaway Linux VM. When the agent finishes (or times out), the container is deleted. This means a misbehaving agent can\'t read other groups\' files, and any mess it makes is cleaned up automatically.</p><ul><li><strong>Per-run isolation</strong> \u2014 <code>--rm</code> flag deletes the container on exit; container name is unique per run</li><li><strong>Selective mounts</strong> \u2014 Group folder (read-write), project root (read-only), IPC directory (read-write), skills (read-only)</li><li><strong>Mount security</strong> \u2014 <code>validateAdditionalMounts()</code> prevents path traversal when groups define custom mounts</li><li><strong>Runtime abstraction</strong> \u2014 Works with Docker or Apple Container via <code>CONTAINER_RUNTIME_BIN</code></li></ul><div class="tech-box">// src/container-runner.ts\nrunContainerAgent(group, input, onRegister, onOutput): Promise&lt;ContainerOutput&gt;\n\n// Mounts:\n// /workspace/group     \u2192 groups/{folder}/  (read-write)\n// /workspace/project   \u2192 project root      (read-only)\n// /workspace/ipc       \u2192 data/ipc/{folder} (read-write)</div>',
+  'concept-proxy-body':'<div class="analogy">Like a hotel concierge with the master key \u2014 you make a request, and the concierge uses the master key on your behalf. You never touch the key yourself.</div><p>Containers receive a placeholder <code>ANTHROPIC_API_KEY</code> and their <code>ANTHROPIC_BASE_URL</code> points to <code>localhost:3001</code> instead of Anthropic\'s servers. The proxy intercepts every request and injects real credentials before forwarding.</p><ul><li><strong>Two auth modes</strong> \u2014 API key mode (injects <code>x-api-key</code> header) or OAuth mode (intercepts the CLI\'s token exchange request)</li><li><strong>Keychain integration</strong> \u2014 OAuth tokens are read from macOS Keychain via <code>security find-generic-password</code></li><li><strong>Token refresh</strong> \u2014 Refreshes OAuth tokens automatically when less than 1 hour remains</li><li><strong>Bind address</strong> \u2014 On Linux, binds to the container\'s host gateway IP so containers can reach it; on macOS it binds to <code>0.0.0.0</code></li></ul><div class="tech-box">// src/credential-proxy.ts\nstartCredentialProxy(port: number, bindHost: string): Promise&lt;Server&gt;\ndetectAuthMode(): AuthMode  // \'api-key\' | \'oauth\'\n\n// Container env vars:\n// ANTHROPIC_BASE_URL=http://host-gateway:3001\n// ANTHROPIC_API_KEY=placeholder</div>',
+  'concept-ipc-body':'<div class="analogy">Like a mail slot between two rooms \u2014 the agent drops a note through the slot, and the host picks it up and acts on it. No direct connection needed between them.</div><p>Containers can\'t call back to the host directly, but they can write JSON files to their IPC directory, which the host polls every second. This lets agents trigger actions like sending a message to a different group, registering a new group, or scheduling a task.</p><ul><li><strong>Poll-based</strong> \u2014 <code>startIpcWatcher()</code> polls <code>data/ipc/{folder}/tasks/</code> every 1000ms (<code>IPC_POLL_INTERVAL</code>)</li><li><strong>Message routing</strong> \u2014 Agents write to <code>ipc/messages/</code> to send outbound messages to any registered group</li><li><strong>Task creation</strong> \u2014 Agents write to <code>ipc/tasks/</code> to schedule future tasks</li><li><strong>Group management</strong> \u2014 Agents can register new groups by writing registration JSON files</li></ul><div class="tech-box">// src/ipc.ts\nstartIpcWatcher(deps: IpcDeps): void\n// Polls: data/ipc/{folder}/tasks/*.json\n// Message format: { type: \'message\', chatJid: \'...\', text: \'...\' }</div>',
+  'concept-scheduler-body':'<div class="analogy">Like a programmable alarm clock that can do anything when it rings \u2014 not just beep, but run a full AI conversation on your behalf at 9am every weekday.</div><p>The scheduler runs a loop every 60 seconds, checking the database for tasks whose next-run time has passed. It fires them by spawning the same container pipeline as a normal message, so scheduled tasks have full AI capabilities.</p><ul><li><strong>Cron and one-shot</strong> \u2014 Tasks can be recurring cron expressions or one-time at a specific time</li><li><strong>Persisted in SQLite</strong> \u2014 Tasks survive restarts; <code>next_run</code> is computed from the cron expression</li><li><strong>Group-scoped</strong> \u2014 Each task belongs to a group and runs in that group\'s container</li><li><strong>60-second resolution</strong> \u2014 <code>SCHEDULER_POLL_INTERVAL</code> = 60000ms; tasks fire within one minute of their scheduled time</li></ul><div class="tech-box">// src/task-scheduler.ts\nstartSchedulerLoop(deps: SchedulerDependencies): void\ncomputeNextRun(task: ScheduledTask): string | null\n\n// Task schema (SQLite):\n// id, group_folder, prompt, schedule_type, schedule_value, next_run, status</div>',
+  'ref0-title':'🎛️ Orchestrator','ref0-desc':'The main event loop. Polls for new messages, checks triggers, drives the queue, coordinates all subsystems on startup.',
+  'ref1-title':'🔌 Channel registry','ref1-desc':'Minimal plugin registry. Channels call <code>registerChannel()</code> at import time; the orchestrator iterates whatever registered itself.',
+  'ref2-title':'📦 Container runner','ref2-desc':'Spawns agent containers with the right mounts, credentials, and IPC directories. Parses streamed output using sentinel markers.',
+  'ref3-title':'🔑 Credential proxy','ref3-desc':'HTTP proxy on port 3001. Intercepts container API calls and injects real credentials. Handles both API key and OAuth auth modes.',
+  'ref4-title':'🚦 Group queue','ref4-desc':'Per-JID serialization of agent runs. Prevents duplicate containers, pipes new messages to running containers, enforces global concurrency limit.',
+  'ref5-title':'📬 IPC watcher','ref5-desc':'Polls the IPC directories every second. Processes task files written by containers \u2014 sending messages, scheduling tasks, registering groups.',
+  'ref6-title':'🗄️ Database','ref6-desc':'SQLite via better-sqlite3. Stores messages, sessions, registered groups, router state, and scheduled tasks. All reads/writes are synchronous.',
+  'ref7-title':'⏰ Scheduler','ref7-desc':'60-second loop that fires due tasks. Supports cron expressions (via cron-parser) and one-shot timestamps.',
+  'ref8-title':'🤖 Agent runner','ref8-desc':'Runs inside the container. Invokes the Claude CLI with the conversation prompt, streams results back with sentinel markers, sends files via <code>.send_files.json</code>.',
+  'ref9-title':'📁 Group folders','ref9-desc':'Each registered group gets an isolated directory mounted into its container. Contains CLAUDE.md (memory), logs, and any files the agent creates.',
+  'svg-lbl-inputs':'INPUTS','svg-lbl-core':'CORE','svg-lbl-queue':'GROUP QUEUE','svg-lbl-container':'AGENT CONTAINER',
+  'svg-sched-title':'\u23F0 Scheduler','svg-remote-title':'\uD83D\uDDA5\uFE0F Remote',
+  'svg-router-title':'\uD83D\uDCEC Router','svg-queue-title':'\uD83D\uDDC2\uFE0F Group Queue',
+  'svg-mcp-title':'\uD83D\uDD27 MCP Tools','svg-memory-title':'\uD83E\uDDE0 Memory',
+  'svg-lark-sub':'Webhook','svg-tg-sub':'Polling','svg-sched-sub':'Cron tasks','svg-ipc-sub':'File-based','svg-remote-sub':'CLI control',
+  'svg-router-desc':'Trigger check \xb7 sender allowlist \xb7 dedup \xb7 stores to SQLite',
+  'svg-queue-desc':'One queue per chat \xb7 serialises concurrent messages',
+  'svg-container-desc':'\uD83D\uDC33 Isolated per group \xb7 credential proxy :3001 \xb7 MCP tools injected',
+  'svg-claude-sub':'Claude Agent SDK \xb7 OAuth','svg-mcp-sub':'Web \xb7 browser \xb7 schedule \xb7 send',
+  'svg-memory-sub':'CLAUDE.md \xb7 conversations/','svg-reply-label':'\u21a9 Reply flows back via channel'
+},
+zh: {
+  'page-title':'NanoClaw 架构','tagline':'架构指南','h1':'NanoClaw 架构',
+  'subtitle':'个人 Claude 助手——消息从任意聊天平台到达，路由到隔离的 AI 容器，回复再原路返回。单进程 Node.js，多平台接入，容器内零密钥。',
+  'toc-overview':'总览',
+  'toc-how-it-works':'工作原理',
+  'toc-step1':'<span class="toc-num">1</span> 消息抵达',
+  'toc-step2':'<span class="toc-num">2</span> 存储与检查',
+  'toc-step3':'<span class="toc-num">3</span> 队列与等待',
+  'toc-step4':'<span class="toc-num">4</span> 启动容器',
+  'toc-step5':'<span class="toc-num">5</span> AI 思考与执行',
+  'toc-step6':'<span class="toc-num">6</span> 回复发送',
+  'toc-concepts':'核心概念',
+  'toc-channel':'<span class="toc-icon">🔌</span> 频道抽象',
+  'toc-queue':'<span class="toc-icon">🚦</span> 分组队列',
+  'toc-container':'<span class="toc-icon">📦</span> 容器隔离',
+  'toc-proxy':'<span class="toc-icon">🔑</span> 凭证代理',
+  'toc-ipc':'<span class="toc-icon">📬</span> 文件 IPC',
+  'toc-scheduler':'<span class="toc-icon">⏰</span> 任务调度',
+  'toc-files':'核心文件',
+  'section-flow':'工作原理',
+  'step1-label':'第一步 — 消息抵达',
+  'step2-label':'第二步 — 存储与检查',
+  'step3-label':'第三步 — 队列与等待',
+  'step4-label':'第四步 — 启动容器',
+  'step5-label':'第五步 — AI 思考与执行',
+  'step6-label':'第六步 — 回复发送',
+  's1c1-title':'<a href="#concept-channel">Lark</a>','s1c1-desc':'Lark 群聊中有消息到来。频道适配器监听新事件，并将其传递给核心系统。',
+  's1c2-title':'<a href="#concept-channel">Telegram</a>','s1c2-desc':'Telegram 机器人收到消息。接口完全一致——核心系统不关心消息来自哪个平台。',
+  's1c3-title':'其他频道','s1c3-desc':'WhatsApp、Slack、Discord 等均可接入。所有在启动时自注册的频道均被一视同仁。',
+  's2c1-title':'保存到数据库','s2c1-desc':'每条消息立即写入 SQLite 数据库，即使 AI 不会回复也如此。积累的对话历史为 AI 提供上下文。',
+  's2c2-title':'发送者与触发词检查','s2c2-desc':'系统检查两件事：发送者是否有权与 AI 对话，消息是否包含触发词（如"@Nano"）？未触发的消息仍会积累为上下文，但不会唤醒 AI。',
+  's3c1-title':'<a href="#concept-queue">每组一条通道</a>','s3c1-desc':'每个聊天组有独立队列。若 AI 正在处理该组消息，新消息需等待——不会同时启动两个 AI 实例。',
+  's3c2-title':'传入活跃容器','s3c2-desc':'若该组的容器已在运行，新消息通过 stdin 直接传入——无需启动新容器，节省时间和成本。',
+  's4c1-title':'<a href="#concept-container">打包并启动</a>','s4c1-desc':'为该组打包全新的一次性容器，挂载组专属文件夹和只读项目视图。用完即弃——各次运行互不干扰。',
+  's4c2-title':'<a href="#concept-proxy">凭证注入</a>','s4c2-desc':'容器获得一个虚假 API key。当它尝试调用 Claude 时，本地代理拦截流量并替换为真实密钥——容器本身永远看不到真实密钥。',
+  'container-badge':'🔒 容器内部',
+  'cc1-title':'AI 读取对话','cc1-desc':'Claude 读取所有待处理消息，加载组的记忆文件及相关技能。可浏览网页、读取工作区文件、执行 bash 命令。',
+  'cc2-title':'<a href="#concept-ipc">响应写入 IPC</a>','cc2-desc':'完成后，Claude 通过哨兵标记将回复写入 stdout。宿主进程读取数据流并提取响应。',
+  's5c1-title':'输出流式回传','s5c1-desc':'AI 生成结果时实时流式回传。AI 处理期间输入中状态保持开启，让对话体验更流畅。',
+  's5c2-title':'按需发送文件','s5c2-desc':'若 AI 生成了文件（图表、文档、图片等），将通过接收原始消息的同一频道作为附件发送。',
+  's6c1-title':'回复已送达','s6c1-desc':'回复通过原始消息所在频道原路返回。路由器将组 ID 匹配到对应频道——Lark 的回复发到 Lark，Telegram 的发到 Telegram。',
+  's6c2-title':'游标推进','s6c2-desc':'成功回复后保存书签，重启后 AI 不会重复处理同一消息。若回复前出错，书签保持不变，消息将被重试。',
+  'section-concepts':'核心概念',
+  'concept-channel-title':'频道抽象',
+  'concept-queue-title':'分组队列',
+  'concept-container-title':'容器隔离',
+  'concept-proxy-title':'凭证代理',
+  'concept-ipc-title':'文件 IPC',
+  'concept-scheduler-title':'任务调度',
+  'concept-channel-body':'<div class="analogy">就像万能电源适配器——同一台电脑，每个国家用不同的插头。核心系统只知道如何与"一个频道"通信，每个国家（平台）提供自己的插头。</div><p>NanoClaw 支持多个消息平台，核心逻辑对任何平台一无所知。每个频道在启动时通过调用 <code>registerChannel()</code> 自注册，注册表按需提供工厂函数。</p><ul><li><strong>自注册</strong> — 频道在导入时自行注册；编排器只需遍历已注册的频道</li><li><strong>统一接口</strong> — 每个频道都实现 <code>connect()</code>、<code>sendMessage()</code>、<code>ownsJid()</code>，可选实现 <code>sendFiles()</code>、<code>setTyping()</code></li><li><strong>基于 JID 的路由</strong> — 每个聊天有唯一 JID（如 WhatsApp 的 <code>120363@g.us</code>、Lark 的 <code>lark:oc_...</code>）；<code>ownsJid()</code> 用于找到正确的回复频道</li></ul><div class="tech-box">// src/channels/registry.ts\nregisterChannel(name: string, factory: ChannelFactory): void\ngetChannelFactory(name: string): ChannelFactory | undefined\ngetRegisteredChannelNames(): string[]</div>',
+  'concept-queue-body':'<div class="analogy">就像每位顾客专属的结账通道——同一个人不会被两个收银员同时服务。每个聊天组有自己的通道，消息在通道内排队等候。</div><p>没有队列的话，同一组快速连发的两条消息可能同时启动两个容器，导致重复回复和竞争条件。<code>GroupQueue</code> 确保每组同时只运行一个容器。</p><ul><li><strong>按 JID 隔离状态</strong> — 每组有独立的 <code>GroupState</code>，包含活跃标志、待处理任务列表和进程引用</li><li><strong>stdin 管道传输</strong> — 若新消息到来时容器已在运行，通过 <code>sendMessage()</code> 将消息传入，无需启动新容器</li><li><strong>空闲超时</strong> — 容器在空闲 30 分钟后通过 <code>closeStdin()</code> 关闭（可通过 <code>IDLE_TIMEOUT</code> 配置）</li><li><strong>全局上限</strong> — <code>MAX_CONCURRENT_CONTAINERS</code> 限制所有组的并行容器总数</li></ul><div class="tech-box">// src/group-queue.ts\nGroupQueue.enqueueMessageCheck(groupJid: string): void\nGroupQueue.sendMessage(groupJid: string, text: string): boolean\nGroupQueue.notifyIdle(groupJid: string): void\nGroupQueue.closeStdin(groupJid: string): void</div>',
+  'concept-container-body':'<div class="analogy">就像一次性餐盒——每顿饭现打包，用完即丢。一个盒子里的东西不会沾染另一个盒子，也不会留下任何残余。</div><p>每次智能体运行都获得一个全新的一次性 Linux VM。智能体完成（或超时）后，容器即被删除。这意味着行为异常的智能体无法读取其他组的文件，产生的任何垃圾都会自动清理。</p><ul><li><strong>单次运行隔离</strong> — <code>--rm</code> 标志在退出时删除容器；容器名称每次运行唯一</li><li><strong>选择性挂载</strong> — 组文件夹（读写）、项目根目录（只读）、IPC 目录（读写）、技能（只读）</li><li><strong>挂载安全</strong> — <code>validateAdditionalMounts()</code> 防止组定义自定义挂载时的路径遍历攻击</li><li><strong>运行时抽象</strong> — 通过 <code>CONTAINER_RUNTIME_BIN</code> 支持 Docker 或 Apple Container</li></ul><div class="tech-box">// src/container-runner.ts\nrunContainerAgent(group, input, onRegister, onOutput): Promise&lt;ContainerOutput&gt;\n\n// 挂载点:\n// /workspace/group     → groups/{folder}/  (读写)\n// /workspace/project   → 项目根目录        (只读)\n// /workspace/ipc       → data/ipc/{folder} (读写)</div>',
+  'concept-proxy-body':'<div class="analogy">就像持有万能钥匙的酒店礼宾员——你提出请求，礼宾员代你使用万能钥匙。你自己永远碰不到那把钥匙。</div><p>容器收到一个占位符 <code>ANTHROPIC_API_KEY</code>，其 <code>ANTHROPIC_BASE_URL</code> 指向 <code>localhost:3001</code> 而非 Anthropic 的服务器。代理拦截每个请求并在转发前注入真实凭证。</p><ul><li><strong>两种鉴权模式</strong> — API key 模式（注入 <code>x-api-key</code> 请求头）或 OAuth 模式（拦截 CLI 的令牌交换请求）</li><li><strong>钥匙串集成</strong> — 通过 <code>security find-generic-password</code> 从 macOS 钥匙串读取 OAuth 令牌</li><li><strong>令牌刷新</strong> — 当剩余有效期不足 1 小时时自动刷新 OAuth 令牌</li><li><strong>绑定地址</strong> — Linux 上绑定容器的宿主网关 IP，使容器可访问；macOS 上绑定 <code>0.0.0.0</code></li></ul><div class="tech-box">// src/credential-proxy.ts\nstartCredentialProxy(port: number, bindHost: string): Promise&lt;Server&gt;\ndetectAuthMode(): AuthMode  // \'api-key\' | \'oauth\'\n\n// 容器环境变量:\n// ANTHROPIC_BASE_URL=http://host-gateway:3001\n// ANTHROPIC_API_KEY=placeholder</div>',
+  'concept-ipc-body':'<div class="analogy">就像两个房间之间的投信口——智能体将便条投进去，宿主取出后按指示行动。两者之间无需直接连接。</div><p>容器无法直接回调宿主，但可以将 JSON 文件写入 IPC 目录，宿主每秒轮询一次。这使智能体能够触发操作，如向其他组发送消息、注册新组或调度任务。</p><ul><li><strong>轮询机制</strong> — <code>startIpcWatcher()</code> 每 1000ms（<code>IPC_POLL_INTERVAL</code>）轮询 <code>data/ipc/{folder}/tasks/</code></li><li><strong>消息路由</strong> — 智能体写入 <code>ipc/messages/</code> 可向任何已注册组发送出站消息</li><li><strong>任务创建</strong> — 智能体写入 <code>ipc/tasks/</code> 可调度未来任务</li><li><strong>组管理</strong> — 智能体可通过写入注册 JSON 文件来注册新组</li></ul><div class="tech-box">// src/ipc.ts\nstartIpcWatcher(deps: IpcDeps): void\n// 轮询: data/ipc/{folder}/tasks/*.json\n// 消息格式: { type: \'message\', chatJid: \'...\', text: \'...\' }</div>',
+  'concept-scheduler-body':'<div class="analogy">就像一个可编程的闹钟，响铃时能做任何事——不只是嘀嘀响，而是在每个工作日早上 9 点为你运行完整的 AI 对话。</div><p>调度器每 60 秒运行一次循环，检查数据库中下次运行时间已过的任务。通过与普通消息相同的容器流水线来触发，因此定时任务具备完整的 AI 能力。</p><ul><li><strong>Cron 与单次任务</strong> — 任务可以是重复的 cron 表达式，也可以是特定时间的一次性任务</li><li><strong>持久化到 SQLite</strong> — 任务在重启后依然存在；<code>next_run</code> 从 cron 表达式计算</li><li><strong>组作用域</strong> — 每个任务属于一个组，并在该组的容器中运行</li><li><strong>60 秒精度</strong> — <code>SCHEDULER_POLL_INTERVAL</code> = 60000ms；任务在计划时间 1 分钟内触发</li></ul><div class="tech-box">// src/task-scheduler.ts\nstartSchedulerLoop(deps: SchedulerDependencies): void\ncomputeNextRun(task: ScheduledTask): string | null\n\n// 任务表结构 (SQLite):\n// id, group_folder, prompt, schedule_type, schedule_value, next_run, status</div>',
+  'ref0-title':'🎛️ 编排器','ref0-desc':'主事件循环。轮询新消息、检查触发词、驱动队列，并在启动时协调所有子系统。',
+  'ref1-title':'🔌 频道注册表','ref1-desc':'轻量级插件注册表。频道在导入时调用 <code>registerChannel()</code>；编排器遍历所有已注册频道。',
+  'ref2-title':'📦 容器运行器','ref2-desc':'以正确的挂载点、凭证和 IPC 目录启动智能体容器。使用哨兵标记解析流式输出。',
+  'ref3-title':'🔑 凭证代理','ref3-desc':'运行在 3001 端口的 HTTP 代理。拦截容器 API 调用并注入真实凭证。支持 API key 和 OAuth 两种鉴权模式。',
+  'ref4-title':'🚦 分组队列','ref4-desc':'按 JID 串行化智能体运行。防止重复容器，将新消息传入运行中的容器，执行全局并发上限。',
+  'ref5-title':'📬 IPC 监听器','ref5-desc':'每秒轮询 IPC 目录，处理容器写入的任务文件——发送消息、调度任务、注册组。',
+  'ref6-title':'🗄️ 数据库','ref6-desc':'基于 better-sqlite3 的 SQLite。存储消息、会话、已注册组、路由状态和定时任务。所有读写均为同步操作。',
+  'ref7-title':'⏰ 调度器','ref7-desc':'60 秒循环，触发到期任务。支持 cron 表达式（通过 cron-parser）和一次性时间戳。',
+  'ref8-title':'🤖 智能体运行器','ref8-desc':'运行在容器内部。使用对话提示调用 Claude CLI，通过哨兵标记流式回传结果，通过 <code>.send_files.json</code> 发送文件。',
+  'ref9-title':'📁 组文件夹','ref9-desc':'每个已注册组获得一个独立目录，挂载到其容器中。包含 CLAUDE.md（记忆）、日志及智能体创建的文件。',
+  'svg-lbl-inputs':'输入源','svg-lbl-core':'核心','svg-lbl-queue':'分组队列','svg-lbl-container':'智能体容器',
+  'svg-sched-title':'\u23F0 调度器','svg-remote-title':'\uD83D\uDDA5\uFE0F 远程控制',
+  'svg-router-title':'\uD83D\uDCEC 路由器','svg-queue-title':'\uD83D\uDDC2\uFE0F 分组队列',
+  'svg-mcp-title':'\uD83D\uDD27 MCP 工具','svg-memory-title':'\uD83E\uDDE0 记忆',
+  'svg-lark-sub':'事件回调','svg-tg-sub':'轮询','svg-sched-sub':'定时任务','svg-ipc-sub':'文件通信','svg-remote-sub':'CLI 控制',
+  'svg-router-desc':'触发词检查 \xb7 发送者白名单 \xb7 去重 \xb7 存入 SQLite',
+  'svg-queue-desc':'每组一个队列 \xb7 串行处理并发消息',
+  'svg-container-desc':'\uD83D\uDC33 每组独立隔离 \xb7 凭证代理 :3001 \xb7 MCP 工具注入',
+  'svg-claude-sub':'Claude Agent SDK \xb7 OAuth','svg-mcp-sub':'网页 \xb7 浏览器 \xb7 调度 \xb7 发送',
+  'svg-memory-sub':'CLAUDE.md \xb7 conversations/','svg-reply-label':'\u21a9 回复通过频道原路返回'
+}};
+
+function getFlowCards(stepId) {
+  var label = document.getElementById(stepId);
+  var next = label ? label.nextElementSibling : null;
+  if (!next || !next.classList.contains('flow')) return [];
+  return Array.from(next.querySelectorAll('.step-card'));
+}
+function getPreferredLang() { return localStorage.getItem('arch-doc-lang') || 'en'; }
+function toggleLang() { applyLang(getPreferredLang() === 'zh' ? 'en' : 'zh'); }
+function applyLang(lang) {
+  var t = T[lang];
+  document.title = t['page-title'];
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.documentElement.setAttribute('data-lang', lang);
+  document.querySelector('.tagline').textContent = t['tagline'];
+  document.querySelector('h1').textContent = t['h1'];
+  document.querySelector('.subtitle').textContent = t['subtitle'];
+  // TOC
+  var qs = function(sel) { return document.querySelector(sel); };
+  qs('a.toc-group-label[href="#overview-section"]').textContent = t['toc-overview'];
+  document.getElementById('overview-section').textContent = t['toc-overview'];
+  qs('a.toc-group-label[href="#flow-section"]').textContent = t['toc-how-it-works'];
+  qs('.toc-item[href="#step1"]').innerHTML = t['toc-step1'];
+  qs('.toc-item[href="#step2"]').innerHTML = t['toc-step2'];
+  qs('.toc-item[href="#step3"]').innerHTML = t['toc-step3'];
+  qs('.toc-item[href="#step4"]').innerHTML = t['toc-step4'];
+  qs('.toc-item[href="#step5"]').innerHTML = t['toc-step5'];
+  qs('.toc-item[href="#step6"]').innerHTML = t['toc-step6'];
+  qs('a.toc-group-label[href="#concepts-section"]').textContent = t['toc-concepts'];
+  qs('.toc-item[href="#concept-channel"]').innerHTML = t['toc-channel'];
+  qs('.toc-item[href="#concept-queue"]').innerHTML = t['toc-queue'];
+  qs('.toc-item[href="#concept-container"]').innerHTML = t['toc-container'];
+  qs('.toc-item[href="#concept-proxy"]').innerHTML = t['toc-proxy'];
+  qs('.toc-item[href="#concept-ipc"]').innerHTML = t['toc-ipc'];
+  qs('.toc-item[href="#concept-scheduler"]').innerHTML = t['toc-scheduler'];
+  qs('a.toc-group-label[href="#reference"]').textContent = t['toc-files'];
+  // Section labels
+  document.getElementById('flow-section').textContent = t['section-flow'];
+  document.getElementById('step1').innerHTML = t['step1-label'];
+  document.getElementById('step2').innerHTML = t['step2-label'];
+  document.getElementById('step3').innerHTML = t['step3-label'];
+  document.getElementById('step4').innerHTML = t['step4-label'];
+  document.getElementById('step5').innerHTML = t['step5-label'];
+  document.getElementById('step6').innerHTML = t['step6-label'];
+  document.getElementById('concepts-section').textContent = t['section-concepts'];
+  document.getElementById('reference').innerHTML = t['toc-files'];
+  // Step cards helper
+  var setCard = function(card, titleKey, descKey) {
+    if (!card) return;
+    card.querySelector('.step-title').innerHTML = t[titleKey];
+    card.querySelector('.step-desc').textContent = t[descKey];
+  };
+  var s1=getFlowCards('step1'); setCard(s1[0],'s1c1-title','s1c1-desc'); setCard(s1[1],'s1c2-title','s1c2-desc'); setCard(s1[2],'s1c3-title','s1c3-desc');
+  var s2=getFlowCards('step2'); setCard(s2[0],'s2c1-title','s2c1-desc'); setCard(s2[1],'s2c2-title','s2c2-desc');
+  var s3=getFlowCards('step3'); setCard(s3[0],'s3c1-title','s3c1-desc'); setCard(s3[1],'s3c2-title','s3c2-desc');
+  var s4=getFlowCards('step4'); setCard(s4[0],'s4c1-title','s4c1-desc'); setCard(s4[1],'s4c2-title','s4c2-desc');
+  // Container section
+  qs('.container-badge').textContent = t['container-badge'];
+  var cc = document.querySelectorAll('.container-inner .step-card');
+  setCard(cc[0],'cc1-title','cc1-desc'); setCard(cc[1],'cc2-title','cc2-desc');
+  var s5=getFlowCards('step5'); setCard(s5[0],'s5c1-title','s5c1-desc'); setCard(s5[1],'s5c2-title','s5c2-desc');
+  var s6=getFlowCards('step6'); setCard(s6[0],'s6c1-title','s6c1-desc'); setCard(s6[1],'s6c2-title','s6c2-desc');
+  // Concepts
+  var setConcept = function(id, tKey, bKey) {
+    var el = document.getElementById(id); if (!el) return;
+    el.querySelector('.concept-title').textContent = t[tKey];
+    el.querySelector('.concept-body').innerHTML = t[bKey];
+  };
+  setConcept('concept-channel','concept-channel-title','concept-channel-body');
+  setConcept('concept-queue','concept-queue-title','concept-queue-body');
+  setConcept('concept-container','concept-container-title','concept-container-body');
+  setConcept('concept-proxy','concept-proxy-title','concept-proxy-body');
+  setConcept('concept-ipc','concept-ipc-title','concept-ipc-body');
+  setConcept('concept-scheduler','concept-scheduler-title','concept-scheduler-body');
+  // Ref cards
+  document.querySelectorAll('.ref-card').forEach(function(card, i) {
+    var ti = card.querySelector('.ref-title'), di = card.querySelector('.ref-desc');
+    if (ti) ti.innerHTML = t['ref'+i+'-title'];
+    if (di) di.innerHTML = t['ref'+i+'-desc'];
+  });
+  // SVG diagram
+  var svgIds = ['svg-lbl-inputs','svg-lbl-core','svg-lbl-queue','svg-lbl-container','svg-sched-title','svg-remote-title','svg-router-title','svg-queue-title','svg-mcp-title','svg-memory-title','svg-lark-sub','svg-tg-sub','svg-sched-sub','svg-ipc-sub','svg-remote-sub','svg-router-desc','svg-queue-desc','svg-container-desc','svg-claude-sub','svg-mcp-sub','svg-memory-sub','svg-reply-label'];
+  svgIds.forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=t[id]; });
+  // Re-attach step title link handlers after innerHTML swap
+  attachStepTitleLinks();
+  // Update lang thumb
+  var lt = qs('.lang-thumb'); if (lt) lt.textContent = lang === 'zh' ? '中' : 'EN';
+  localStorage.setItem('arch-doc-lang', lang);
+}
+applyLang(getPreferredLang());
 </script>
 </body>
 </html>
